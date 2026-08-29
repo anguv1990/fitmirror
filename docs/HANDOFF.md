@@ -76,7 +76,7 @@ Full detail in `04-prerequisite-gate.md`.
 | G2 | Confirm **exact per-image price** of Virtual Try-On | ❓ **UNVERIFIED** — not published in docs we could reach | You (GCP console / pricing calc) |
 | G3 | GCP project + billing + **budget alert and hard cap** | Not started | You |
 | G4 | Source a licensed/synthetic model image set | Not started | You |
-| G5 | Source a real brand **size chart** with body measurements | 🟡 Womenswear done (Boden); menswear outstanding | You |
+| G5 | Source a real brand **size chart** with body measurements | ✅ **Cleared** — Boden (women's) + Seasalt (men's) | Done |
 | G6 | Decide: does the live demo allow **audience uploads**? | Open | You |
 
 **G1 and G2 are genuinely unresolved.** We could not confirm either from public documentation. Do not
@@ -94,8 +94,8 @@ committed to. If G1 fails, the compliance story in `03-compliance-uk.md` changes
 1. Clear **G1 and G2** in the GCP console. Everything on the render path depends on them.
 2. Set the budget cap (**G3**) before making a single API call.
 3. Decide **G6** (audience uploads). It determines whether a DPIA is needed.
-4. Source a real **menswear** chart to finish **G5**. Womenswear is done — Boden UK's published body
-   measurements are in and are the demo default. Menswear is still a flagged placeholder.
+4. ~~Source a real size chart (**G5**)~~ — done. Boden UK womenswear and Seasalt Cornwall menswear, both
+   confirmed body measurements. No placeholder data ships.
 
 **Buildable now, gate-independent:**
 

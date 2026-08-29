@@ -57,19 +57,17 @@ path. That is days of work, not hours. Decide early.
 Options: licensed stock (Shutterstock/Getty — check the AI-processing terms specifically, some licences
 prohibit it), or AI-generated model photos (no real data subject at all — cleanest).
 
-### G5 · A real brand size chart — ⚠️ HALF CLEARED
-- [x] **Womenswear done.** [Boden UK](https://www.boden.com/pages/womens-size-fit-chart), retrieved
-      2026-08-29, now the demo default (`boden-womens`, `verified: true`)
-- [x] Confirmed *body* not *garment* measurements, from Boden's own instructions ("Measure under your arms,
-      across the fullest part of your bust")
-- [x] Source and retrieval date recorded in `lib/fit/sizeCharts.ts`
-- [ ] **Menswear still a placeholder.** Boden does not publish men's body measurements at a stable page.
-      `uk-mens-tops` remains `verified: false` and the UI shows a caveat for it.
+### G5 · A real brand size chart — ✅ CLEARED
+- [x] **Womenswear:** [Boden UK](https://www.boden.com/pages/womens-size-fit-chart), retrieved 2026-08-29
+      (`boden-womens`, demo default)
+- [x] **Menswear:** [Seasalt Cornwall](https://www.seasaltcornwall.com/size-guide), retrieved 2026-08-29
+      (`seasalt-mens`)
+- [x] Both confirmed *body* not *garment* measurements, from each chart's own "How to measure" wording
+- [x] Both verified against the live DOM table, not just an extraction
+- [x] Sources and retrieval dates recorded in `lib/fit/sizeCharts.ts`
 
-To finish: source a real published men's chart, confirm body-not-garment, and set `verified: true`.
-
-Most UK high-street retailers publish these publicly. Using a real one makes the demo credible to a
-retail audience.
+No placeholder data ships any more. The `verified` flag and its UI caveat remain in place so anything added
+later cannot pass as authoritative.
 
 ### G7 · Verify Vertex model access
 - [ ] Vertex AI API enabled on the project
@@ -109,7 +107,7 @@ Some Google generative models require access approval. Find out before demo week
 | G3 Budget cap | P0 | ⬜ Not started |
 | G6 Upload decision | P0 | ⬜ Open |
 | G4 Model images | P1 | ⬜ Not started |
-| G5 Size chart | P1 | 🟡 Womenswear done, menswear outstanding |
+| G5 Size chart | P1 | ✅ Cleared |
 | G7 Vertex access | P1 | ⬜ Not started |
 | G8 Bias check | P2 | ⬜ Not started |
 | G9 Demo resilience | P2 | ⬜ Not started |
