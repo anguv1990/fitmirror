@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@theme {
+  /* The cutting table. Mat green under tissue-paper panels. */
+  --color-mat: #202d28;
+  --color-mat-2: #26352f;
+  --color-mat-ink: #a8b5ac;
+  --color-tissue: #ece5d6;
+  --color-tissue-2: #ded5c2;
+  --color-graphite: #1c2320;
+  --color-chalk: #74c0d4;
+  --color-redline: #cf4b3f;
+
+  --font-display: var(--font-barlow-condensed), ui-sans-serif, sans-serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+:root {
+  --grid-minor: rgba(255, 255, 255, 0.022);
+  --grid-major: rgba(116, 192, 212, 0.06);
+}
+
+html {
+  background-color: var(--color-mat);
+}
+
+/* The mat itself: a printed cutting grid, two scales. Texture, not pattern —
+   it should sit under the content without competing with it. */
+body {
+  background-color: var(--color-mat);
+  background-image:
+    linear-gradient(var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px);
+  background-size: 12px 12px, 12px 12px, 60px 60px, 60px 60px;
+  color: var(--color-tissue);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Wordmark: FIT is cut, MIRROR is its reflection. */
+.wordmark-ghost {
+  color: transparent;
+}
+@supports (-webkit-text-stroke: 1px black) {
+  .wordmark-ghost {
+    -webkit-text-stroke: 1.25px var(--color-chalk);
+  }
+}
+@supports not (-webkit-text-stroke: 1px black) {
+  .wordmark-ghost {
+    color: var(--color-chalk);
+  }
+}
+
+/* Measurement ticks along the top edge of the mirror frame. */
+.tick-rule {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--color-chalk) 0 1px,
+    transparent 1px 12px
+  );
+  opacity: 0.5;
+}
+
+/* Basting stitch: sews itself around the result on load. */
+.baste rect {
+  stroke-dasharray: 7 6;
+  stroke-dashoffset: 1200;
+  animation: baste 1100ms cubic-bezier(0.6, 0, 0.2, 1) forwards;
+}
+@keyframes baste {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.tissue-in {
+  animation: tissue-in 420ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+@keyframes tissue-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .baste rect {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .tissue-in {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-chalk);
+  outline-offset: 2px;
+}
