@@ -12,12 +12,12 @@ import type {
   FitRecommendation,
   MeasurementSource,
 } from "@/lib/fit/types";
+import { DEFAULT_SIZE_CHART_ID } from "@/lib/fit/sizeCharts";
 import type { Garment, TryOnResult as Result } from "@/lib/types";
 
 type Status = "idle" | "loading" | "done" | "error";
 
-/** Which size chart the demo matches against. Placeholder pending gate G5. */
-const SIZE_CHART_ID = "uk-mens-tops";
+
 
 export default function Home() {
   const [photo, setPhoto] = useState<CapturedPhoto | null>(null);
@@ -28,6 +28,7 @@ export default function Home() {
   const [measurementSource, setMeasurementSource] =
     useState<MeasurementSource>("declared");
   const [fitPreference, setFitPreference] = useState<FitPreference>("regular");
+  const [sizeChartId, setSizeChartId] = useState(DEFAULT_SIZE_CHART_ID);
 
   const [fitStatus, setFitStatus] = useState<Status>("idle");
   const [fit, setFit] = useState<FitRecommendation | null>(null);
@@ -72,7 +73,7 @@ export default function Home() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             measurements,
-            sizeChartId: SIZE_CHART_ID,
+            sizeChartId,
             fitPreference,
             measurementSource,
           }),
@@ -98,7 +99,7 @@ export default function Home() {
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [measurements, fitPreference, measurementSource, hasMeasurements]);
+  }, [measurements, fitPreference, measurementSource, sizeChartId, hasMeasurements]);
 
   const runTryOn = useCallback(
     async (nextPhoto: CapturedPhoto, nextGarment: Garment) => {
@@ -183,10 +184,12 @@ export default function Home() {
               heightCm={heightCm}
               measurements={measurements}
               fitPreference={fitPreference}
+              sizeChartId={sizeChartId}
               photoDataUrl={photo?.dataUrl ?? null}
               onHeightChange={setHeightCm}
               onMeasurementsChange={handleMeasurements}
               onFitPreferenceChange={setFitPreference}
+              onSizeChartChange={setSizeChartId}
             />
           </Panel>
 

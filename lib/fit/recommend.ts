@@ -36,6 +36,13 @@ const PREFERENCE_EASE_CM: Record<FitPreference, number> = {
  */
 const MAX_CONFIDENCE = 0.95;
 
+/**
+ * Centimetres of distance at which an out-of-range measurement scores half.
+ * Fixed rather than band-relative so sizes stay comparable across charts with
+ * very different band widths.
+ */
+const OUT_OF_RANGE_DECAY_CM = 10;
+
 const MEASUREMENT_LABELS: Record<keyof BodyMeasurements, string> = {
   chestCm: "chest",
   waistCm: "waist",
@@ -163,9 +170,14 @@ function scoreEntry(
     // every far-out size at 0, which makes them indistinguishable and lets the
     // sort return the first entry — recommending XS to someone off the top of
     // the chart. This keeps the ordering by distance meaningful at any extreme.
+    //
+    // The scale is a fixed number of centimetres, deliberately NOT the band
+    // width: normalising by band width lets a wide band beat a near one at long
+    // range, because the same absolute distance reads as "fewer bands away".
+    // With Boden's UK 4 (a wide open-ended band) that ranked UK 4 above UK 22
+    // for a 135cm bust. Absolute distance is what "nearest size" means.
     const distance = value < lo ? lo - value : value - hi;
-    const bandWidth = Math.max(hi - lo, 1);
-    weighted += weight * (1 / (1 + distance / bandWidth));
+    weighted += weight * (1 / (1 + distance / OUT_OF_RANGE_DECAY_CM));
   }
 
   return {

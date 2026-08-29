@@ -4,7 +4,7 @@ import { getSizeChart } from "./sizeCharts";
 import type { SizeChart } from "./types";
 
 const mens = getSizeChart("uk-mens-tops")!;
-const womens = getSizeChart("uk-womens-tops")!;
+const womens = getSizeChart("boden-womens")!;
 
 describe("recommendSize", () => {
   it("picks the size whose band contains the chest measurement", () => {
@@ -141,6 +141,15 @@ describe("recommendSize", () => {
       expect(result.reason).toMatch(/outside this chart/i);
     });
 
+    it("picks the nearest size when off-chart, even against a much wider band", () => {
+      // Boden's UK 4 is an open-ended band (wide); UK 22 is narrow but far
+      // closer. Normalising distance by band width used to rank UK 4 first for
+      // a 135cm bust, which is the worst kind of wrong answer here.
+      const result = recommendSize({ measurements: { chestCm: 135 }, chart: womens });
+      expect(result.outOfChartRange).toBe(true);
+      expect(result.recommendedSize).toBe("UK 22");
+    });
+
     it("handles being below the smallest size", () => {
       const result = recommendSize({ measurements: { chestCm: 50 }, chart: mens });
       expect(result.outOfChartRange).toBe(true);
@@ -177,6 +186,21 @@ describe("recommendSize", () => {
       const result = recommendSize({ measurements: { chestCm: 98 }, chart: mens });
       expect(result.sizeChartVerified).toBe(false);
       expect(result.sizeChartSource).toMatch(/placeholder/i);
+    });
+
+    it("reports the real Boden chart as verified and names its source", () => {
+      const result = recommendSize({ measurements: { chestCm: 92 }, chart: womens });
+      expect(result.sizeChartVerified).toBe(true);
+      expect(result.sizeChartSource).toMatch(/Boden/);
+    });
+
+    it("scores higher confidence on a verified chart than a placeholder", () => {
+      const verified = recommendSize({ measurements: { chestCm: 92 }, chart: womens });
+      const placeholder = recommendSize({
+        measurements: { chestCm: 92 },
+        chart: { ...womens, verified: false },
+      });
+      expect(verified.confidence).toBeGreaterThan(placeholder.confidence);
     });
 
     it("never reports full certainty, even on a perfect verified match", () => {

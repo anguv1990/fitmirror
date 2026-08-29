@@ -29,8 +29,19 @@ curl -X POST localhost:3000/api/fit -H 'Content-Type: application/json' \
 
 `GET /api/fit` lists the available charts.
 
-**The bundled size charts are placeholders.** Every response carries `sizeChartVerified: false` until a real
-published chart replaces them — see gate G5 in `docs/04-prerequisite-gate.md`.
+### Size charts
+
+| Chart | Source | Verified |
+| --- | --- | --- |
+| `boden-womens` (default) | [Boden UK womenswear](https://www.boden.com/pages/womens-size-fit-chart), retrieved 2026-08-29 | ✅ Real published **body** measurements |
+| `uk-mens-tops` | Generic UK menswear | ❌ Placeholder — gate G5 |
+
+Every response carries `sizeChartVerified`, and the UI prints a caveat whenever it is `false`, so placeholder
+data can never be presented as authoritative.
+
+The body-vs-garment distinction matters more than it sounds: garment measurements include the maker's ease
+allowance, so matching a body against them silently oversizes everyone. Boden's chart is confirmed body
+measurements by its own instructions ("Measure under your arms, across the fullest part of your bust").
 
 ### Photo-based measurement
 
