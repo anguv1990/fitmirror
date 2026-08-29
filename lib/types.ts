@@ -1,0 +1,47 @@
+export type GarmentCategory = "top" | "outerwear" | "dress" | "bottom";
+
+/**
+ * A garment in the catalog.
+ *
+ * `art` is inline SVG markup drawn in a 0 0 100 140 coordinate space. It is the
+ * single source of truth for the garment's appearance: the picker renders it as
+ * a thumbnail, and the mock try-on provider composites the same markup over the
+ * person photo. Keeping one copy avoids the thumbnail and the result drifting.
+ */
+export interface Garment {
+  id: string;
+  name: string;
+  category: GarmentCategory;
+  /** Swatch shown in the picker chrome. Any CSS color. */
+  accent: string;
+  art: string;
+  /**
+   * Where the art sits on the person photo, as fractions (0-1) of the photo's
+   * width and height. Origin is the top-left of the photo.
+   */
+  fit: { x: number; y: number; width: number; height: number };
+}
+
+export interface TryOnRequest {
+  /** The person photo, as a `data:image/...` URL. */
+  personImage: string;
+  /** Natural pixel dimensions of `personImage`, measured by the client. */
+  personWidth: number;
+  personHeight: number;
+  garmentId: string;
+}
+
+export interface TryOnResult {
+  /** The rendered try-on image, as a data URL. */
+  image: string;
+  garmentId: string;
+  /** Which provider produced this, e.g. "mock" or "replicate". */
+  provider: string;
+  /** Wall-clock time the provider took, in milliseconds. */
+  elapsedMs: number;
+  /**
+   * Set by providers that do not perform real garment fitting, so the UI can
+   * say so rather than passing a placeholder off as inference.
+   */
+  simulated?: boolean;
+}
