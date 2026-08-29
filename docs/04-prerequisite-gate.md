@@ -57,11 +57,16 @@ path. That is days of work, not hours. Decide early.
 Options: licensed stock (Shutterstock/Getty — check the AI-processing terms specifically, some licences
 prohibit it), or AI-generated model photos (no real data subject at all — cleanest).
 
-### G5 · A real brand size chart
-- [ ] Obtain a genuine size chart with **body measurements in cm** (chest/waist/hip per size)
-- [ ] Confirm it is *body* measurements, not *garment* measurements — they are different and the
-      distinction is the single most common source of sizing errors
-- [ ] Record the source brand and date
+### G5 · A real brand size chart — ⚠️ HALF CLEARED
+- [x] **Womenswear done.** [Boden UK](https://www.boden.com/pages/womens-size-fit-chart), retrieved
+      2026-08-29, now the demo default (`boden-womens`, `verified: true`)
+- [x] Confirmed *body* not *garment* measurements, from Boden's own instructions ("Measure under your arms,
+      across the fullest part of your bust")
+- [x] Source and retrieval date recorded in `lib/fit/sizeCharts.ts`
+- [ ] **Menswear still a placeholder.** Boden does not publish men's body measurements at a stable page.
+      `uk-mens-tops` remains `verified: false` and the UI shows a caveat for it.
+
+To finish: source a real published men's chart, confirm body-not-garment, and set `verified: true`.
 
 Most UK high-street retailers publish these publicly. Using a real one makes the demo credible to a
 retail audience.
@@ -104,7 +109,7 @@ Some Google generative models require access approval. Find out before demo week
 | G3 Budget cap | P0 | ⬜ Not started |
 | G6 Upload decision | P0 | ⬜ Open |
 | G4 Model images | P1 | ⬜ Not started |
-| G5 Size chart | P1 | ⬜ Not started |
+| G5 Size chart | P1 | 🟡 Womenswear done, menswear outstanding |
 | G7 Vertex access | P1 | ⬜ Not started |
 | G8 Bias check | P2 | ⬜ Not started |
 | G9 Demo resilience | P2 | ⬜ Not started |
