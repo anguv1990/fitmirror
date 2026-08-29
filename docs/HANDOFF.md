@@ -1,8 +1,13 @@
 # FitMirror — Handoff
 
 **Last updated:** 2026-08-29
-**Status:** Planning. No implementation started on the try-on/fit backend.
+**Status:** Fit engine built on `feat/fit-engine`. Render path still gated.
 **Read this first.** It is the resume point if work is interrupted.
+
+> **Progress.** Build items 1–2 from `02-architecture.md` §8 are done — the fit recommendation engine and
+> `POST /api/fit`, with 22 passing tests. They were built ahead of the P0 gates because they depend on
+> none of them: no API key, no cloud project, no per-call cost. Items 3 and 5 remain blocked on
+> G1/G2/G3/G7 and G6. **Item 4 (MediaPipe pose) is unblocked and is the next thing to build.**
 
 ---
 
@@ -84,13 +89,40 @@ committed to. If G1 fails, the compliance story in `03-compliance-uk.md` changes
 
 ## 5. Recommended next actions
 
-In order:
+**Yours (nobody else can do these — they need your GCP account):**
 
-1. Clear **G1 and G2** in the GCP console. Everything downstream depends on them.
+1. Clear **G1 and G2** in the GCP console. Everything on the render path depends on them.
 2. Set the budget cap (**G3**) before making a single API call.
-3. Read `04-prerequisite-gate.md` and work the checklist.
-4. Only then: agree the tech stack and start implementation (see `02-architecture.md` for the
-   proposed shape).
+3. Decide **G6** (audience uploads). It determines whether a DPIA is needed.
+4. Source the real size chart (**G5**) — the current charts are placeholders and the API says so.
+
+**Buildable now, gate-independent:**
+
+5. Item 4: MediaPipe pose → estimated measurements, client-side. Apache 2.0, free, and because it runs
+   in the browser the fit path never transmits the photo at all.
+6. UI for the fit flow, wired to `POST /api/fit`.
+
+## 5a. What was built, and what it deliberately does not do
+
+`feat/fit-engine` adds `lib/fit/` and `app/api/fit/route.ts`:
+
+- Weighted band matching (chest 0.6 / waist 0.25 / hip 0.15) against a size chart
+- Fit preference (`fitted` / `regular` / `relaxed`) applied as ease before matching
+- Confidence scoring that drops on boundaries, measurement disagreement, single measurements,
+  photo-derived input, off-chart bodies, and unverified charts
+- Plain-English explanation — the reason string is the product, not decoration
+- **Confidence is capped at 0.95.** It never claims certainty, because garment cut varies within a size
+  regardless of how well measurements match (`03-compliance-uk.md` §5)
+- **Placeholder charts are flagged in every response** via `sizeChartVerified: false`
+
+Three defects were found and fixed during verification, all worth knowing about because they are the
+failure modes this engine will drift back toward:
+
+1. Far-out measurements all scored exactly 0 under a linear decay, so a 150cm chest was recommended
+   **XS** — the first entry, not the nearest. Now decays asymptotically.
+2. Confidence could reach 1.0.
+3. With a fit preference applied, the explanation quoted the raw measurement against the eased band
+   ("96.5cm is toward the upper end of 91–96cm") — self-contradictory. Now shows both figures.
 
 ---
 
