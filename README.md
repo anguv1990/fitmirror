@@ -33,15 +33,19 @@ curl -X POST localhost:3000/api/fit -H 'Content-Type: application/json' \
 
 | Chart | Source | Verified |
 | --- | --- | --- |
-| `boden-womens` (default) | [Boden UK womenswear](https://www.boden.com/pages/womens-size-fit-chart), retrieved 2026-08-29 | ✅ Real published **body** measurements |
-| `uk-mens-tops` | Generic UK menswear | ❌ Placeholder — gate G5 |
+| `boden-womens` (default) | [Boden UK](https://www.boden.com/pages/womens-size-fit-chart), retrieved 2026-08-29 | ✅ Real published **body** measurements |
+| `seasalt-mens` | [Seasalt Cornwall](https://www.seasaltcornwall.com/size-guide), retrieved 2026-08-29 | ✅ Real published **body** measurements |
 
-Every response carries `sizeChartVerified`, and the UI prints a caveat whenever it is `false`, so placeholder
-data can never be presented as authoritative.
+Both shipped charts are real. Responses still carry `sizeChartVerified`, and the UI prints a caveat whenever
+it is `false`, so any placeholder added later cannot be presented as authoritative.
 
 The body-vs-garment distinction matters more than it sounds: garment measurements include the maker's ease
-allowance, so matching a body against them silently oversizes everyone. Boden's chart is confirmed body
-measurements by its own instructions ("Measure under your arms, across the fullest part of your bust").
+allowance, so matching a body against them silently oversizes everyone. Both charts are confirmed body
+measurements by their own instructions — Boden's "Measure under your arms, across the fullest part of your
+bust", and Seasalt's "Measure a full circumference around the fullest part of the chest".
+
+Real charts also leave **gaps between bands** (Seasalt jumps 94→96cm at S/M). Someone landing in a gap is
+still on the chart: `outOfChartRange` tests the chart's overall span, not band membership.
 
 ### Photo-based measurement
 

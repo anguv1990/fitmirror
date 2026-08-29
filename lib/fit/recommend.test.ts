@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { recommendSize } from "./recommend";
-import { getSizeChart } from "./sizeCharts";
+import { getSizeChart, SIZE_CHARTS } from "./sizeCharts";
 import type { SizeChart } from "./types";
 
-const mens = getSizeChart("uk-mens-tops")!;
+const mens = getSizeChart("seasalt-mens")!;
 const womens = getSizeChart("boden-womens")!;
 
 describe("recommendSize", () => {
@@ -42,10 +42,10 @@ describe("recommendSize", () => {
   });
 
   it("offers an alternative size when the shopper is on a boundary", () => {
-    // 101cm is the shared edge of M (96-101) and L (101-106).
-    const result = recommendSize({ measurements: { chestCm: 101 }, chart: mens });
+    // 95cm sits in the gap between S (89-94) and M (96-101), equidistant.
+    const result = recommendSize({ measurements: { chestCm: 95 }, chart: mens });
     expect(result.alternativeSize).not.toBeNull();
-    expect([result.recommendedSize, result.alternativeSize].sort()).toEqual(["L", "M"]);
+    expect([result.recommendedSize, result.alternativeSize].sort()).toEqual(["M", "S"]);
   });
 
   it("does not offer an alternative when the match is unambiguous", () => {
@@ -86,16 +86,29 @@ describe("recommendSize", () => {
       expect(result.reason).toContain("relaxed");
     });
 
-    it("shows both the raw and eased figure so the reason is not self-contradictory", () => {
-      // 96.5 eases to 94.5 and matches S (91-96). Quoting only 96.5 against
-      // that band would read as a contradiction.
+    it("states the eased figure when easing lands in a gap between bands", () => {
+      // 98 + 4 (relaxed) = 102, which falls in Seasalt's M/L gap. The reason
+      // must still name the preference and must not claim 98cm is "above" M.
       const result = recommendSize({
-        measurements: { chestCm: 96.5 },
+        measurements: { chestCm: 98 },
+        chart: mens,
+        fitPreference: "relaxed",
+      });
+      expect(result.reason).toContain("relaxed");
+      expect(result.reason).toContain("102cm");
+      expect(result.reason).not.toMatch(/Your chest \(98cm\) is above/);
+    });
+
+    it("shows both the raw and eased figure so the reason is not self-contradictory", () => {
+      // 98 eases to 96 and matches M (96-101). Quoting only 98 against that
+      // band would read as a contradiction at the boundary.
+      const result = recommendSize({
+        measurements: { chestCm: 98 },
         chart: mens,
         fitPreference: "fitted",
       });
-      expect(result.reason).toContain("96.5cm");
-      expect(result.reason).toContain("94.5cm");
+      expect(result.reason).toContain("98cm");
+      expect(result.reason).toContain("96cm");
     });
   });
 
@@ -136,7 +149,7 @@ describe("recommendSize", () => {
     it("flags being off the chart and still names the nearest size", () => {
       const result = recommendSize({ measurements: { chestCm: 150 }, chart: mens });
       expect(result.outOfChartRange).toBe(true);
-      expect(result.recommendedSize).toBe("XXL");
+      expect(result.recommendedSize).toBe("XXXL");
       expect(result.confidence).toBeLessThan(0.4);
       expect(result.reason).toMatch(/outside this chart/i);
     });
@@ -150,10 +163,18 @@ describe("recommendSize", () => {
       expect(result.recommendedSize).toBe("UK 22");
     });
 
+    it("does not report off-chart for a measurement falling in a band gap", () => {
+      // Seasalt jumps 94 -> 96 at the S/M boundary. Someone at 95 is squarely on
+      // the chart; saying otherwise is both wrong and alarming.
+      const result = recommendSize({ measurements: { chestCm: 95 }, chart: mens });
+      expect(result.outOfChartRange).toBeUndefined();
+      expect(result.reason).not.toMatch(/outside this chart/i);
+    });
+
     it("handles being below the smallest size", () => {
       const result = recommendSize({ measurements: { chestCm: 50 }, chart: mens });
       expect(result.outOfChartRange).toBe(true);
-      expect(result.recommendedSize).toBe("XS");
+      expect(result.recommendedSize).toBe("S");
     });
 
     it("lowers confidence when only one measurement is supplied", () => {
@@ -182,10 +203,25 @@ describe("recommendSize", () => {
   });
 
   describe("provenance", () => {
-    it("propagates the chart's verified flag so placeholders cannot pass as real", () => {
-      const result = recommendSize({ measurements: { chestCm: 98 }, chart: mens });
+    it("propagates an unverified flag so placeholders cannot pass as real", () => {
+      const placeholder: SizeChart = {
+        ...mens,
+        verified: false,
+        source: "Made-up sizing (placeholder)",
+      };
+      const result = recommendSize({ measurements: { chestCm: 98 }, chart: placeholder });
       expect(result.sizeChartVerified).toBe(false);
       expect(result.sizeChartSource).toMatch(/placeholder/i);
+    });
+
+    it("ships only verified charts", () => {
+      expect(SIZE_CHARTS.every((c) => c.verified)).toBe(true);
+    });
+
+    it("reports the real Seasalt menswear chart as verified", () => {
+      const result = recommendSize({ measurements: { chestCm: 98 }, chart: mens });
+      expect(result.sizeChartVerified).toBe(true);
+      expect(result.sizeChartSource).toMatch(/Seasalt/);
     });
 
     it("reports the real Boden chart as verified and names its source", () => {

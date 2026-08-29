@@ -101,8 +101,16 @@ export function recommendSize({
   const winner = ranked[0];
   const runnerUp = ranked[1];
 
-  // Every measurement outside every band means the shopper is off the chart.
-  const outOfChartRange = scores.every((s) => s.outOfRange.length === provided.length);
+  // Off-chart means outside the chart's overall span — NOT merely falling
+  // between two bands. Real charts leave gaps (Seasalt's menswear jumps 94→96cm
+  // at the S/M boundary), and someone landing in a gap is squarely on the chart;
+  // telling them otherwise would be both wrong and alarming.
+  const outOfChartRange = provided.every((key) => {
+    const span = chartSpan(chart, key);
+    if (!span) return true;
+    const value = adjusted[key]!;
+    return value < span.min || value > span.max;
+  });
 
   const confidence = computeConfidence({
     winner,
@@ -247,6 +255,25 @@ function measurementsAgree(
   return new Set(bestPer).size <= 1;
 }
 
+/**
+ * The overall range a chart covers for one measurement: the lowest low and the
+ * highest high across all its rows. Exported so callers reason about the chart's
+ * span rather than re-deriving it.
+ */
+export function chartSpan(
+  chart: SizeChart,
+  key: keyof BodyMeasurements,
+): { min: number; max: number } | null {
+  const ranges = chart.entries
+    .map((entry) => entry[key])
+    .filter((range): range is [number, number] => range !== undefined);
+  if (ranges.length === 0) return null;
+  return {
+    min: Math.min(...ranges.map((r) => r[0])),
+    max: Math.max(...ranges.map((r) => r[1])),
+  };
+}
+
 function bestSizeFor(
   key: keyof BodyMeasurements,
   value: number,
@@ -324,10 +351,21 @@ function buildReason({
   for (const key of winner.outOfRange) {
     const range = entry[key];
     if (!range) continue;
-    const value = measurements[key]!;
+    const label = MEASUREMENT_LABELS[key];
+    const actual = measurements[key]!;
+    const eased = adjusted[key]!;
+    // Direction must come from the eased figure, since that is what was
+    // matched. Judging it on the raw value produces contradictions like
+    // "98cm is above M (96-101cm)" when a relaxed cut pushed the match to 102.
+    const direction = eased < range[0] ? "below" : "above";
+
     parts.push(
-      `Your ${MEASUREMENT_LABELS[key]} (${value}cm) is ${value < range[0] ? "below" : "above"} ` +
-        `the ${winner.size} range (${range[0]}–${range[1]}cm).`,
+      ease === 0
+        ? `Your ${label} (${actual}cm) is ${direction} the ${winner.size} ` +
+            `range (${range[0]}–${range[1]}cm).`
+        : `Allowing for a ${fitPreference} cut, your ${label} (${actual}cm) is ` +
+            `matched at ${round2(eased)}cm — ${direction} the ${winner.size} ` +
+            `range (${range[0]}–${range[1]}cm).`,
     );
   }
 

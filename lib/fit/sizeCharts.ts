@@ -49,33 +49,40 @@ const bodenWomens: SizeChart = {
 };
 
 /**
- * ⚠️ PLACEHOLDER — generic UK menswear ranges, not a real brand's chart.
+ * Seasalt Cornwall menswear — real published body measurements.
  *
- * Gate G5 is only half cleared: a verified womenswear chart is in place, but no
- * equivalent menswear chart has been sourced. Boden does not publish its men's
- * body measurements at a stable page, and guessing was rejected in favour of
- * leaving this explicitly flagged.
+ * Source:    https://www.seasaltcornwall.com/size-guide
+ * Retrieved: 2026-08-29
  *
- * To finish clearing G5: source a real published men's chart, confirm it states
- * BODY rather than GARMENT measurements, replace these entries, and set
- * `verified: true` with the brand and retrieval date in `source`.
+ * Confirmed BODY measurements. The men's table has its own "How to measure"
+ * block directly beneath it: "Chest: Measure a full circumference around the
+ * fullest part of the chest including the shoulder blades", "Waist: Measure a
+ * full circumference around the natural waistline." The womenswear section on
+ * the same page carries a separate block, so this wording is specific to the
+ * men's chart rather than inherited.
+ *
+ * Note the deliberate gaps between bands (S ends 94, M starts 96). They are in
+ * the source, not a transcription error. `outOfChartRange` tests the chart's
+ * overall span precisely so a shopper landing in a gap is not told they are off
+ * the chart.
+ *
+ * No hip measurements: Seasalt publishes hips for womenswear only.
  */
-const genericMens: SizeChart = {
-  id: "uk-mens-tops",
-  source: "Generic UK menswear sizing (placeholder — see gate G5)",
-  verified: false,
+const seasaltMens: SizeChart = {
+  id: "seasalt-mens",
+  source: "Seasalt Cornwall menswear, retrieved 2026-08-29",
+  verified: true,
   entries: [
-    { size: "XS", chestCm: [86, 91], waistCm: [71, 76] },
-    { size: "S", chestCm: [91, 96], waistCm: [76, 81] },
+    { size: "S", chestCm: [89, 94], waistCm: [74, 79] },
     { size: "M", chestCm: [96, 101], waistCm: [81, 86] },
-    { size: "L", chestCm: [101, 106], waistCm: [86, 91] },
-    { size: "XL", chestCm: [106, 111], waistCm: [91, 96] },
-    { size: "XXL", chestCm: [111, 116], waistCm: [96, 101] },
+    { size: "L", chestCm: [104, 109], waistCm: [89, 94] },
+    { size: "XL", chestCm: [111, 116], waistCm: [96, 101] },
+    { size: "XXL", chestCm: [119, 124], waistCm: [104, 109] },
+    { size: "XXXL", chestCm: [127, 132], waistCm: [111, 117] },
   ],
 };
 
-/** Verified charts first, so the default is a real one. */
-export const SIZE_CHARTS: SizeChart[] = [bodenWomens, genericMens];
+export const SIZE_CHARTS: SizeChart[] = [bodenWomens, seasaltMens];
 
 /** The chart the demo opens on. Deliberately the verified one. */
 export const DEFAULT_SIZE_CHART_ID = bodenWomens.id;
