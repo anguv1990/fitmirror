@@ -1,28 +1,110 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import GarmentPicker from "@/components/GarmentPicker";
+import MeasurementForm from "@/components/MeasurementForm";
 import PhotoSource, { type CapturedPhoto } from "@/components/PhotoSource";
+import SizeRecommendation from "@/components/SizeRecommendation";
 import TryOnResult from "@/components/TryOnResult";
+import type {
+  BodyMeasurements,
+  FitPreference,
+  FitRecommendation,
+  MeasurementSource,
+} from "@/lib/fit/types";
 import type { Garment, TryOnResult as Result } from "@/lib/types";
 
 type Status = "idle" | "loading" | "done" | "error";
 
+/** Which size chart the demo matches against. Placeholder pending gate G5. */
+const SIZE_CHART_ID = "uk-mens-tops";
+
 export default function Home() {
   const [photo, setPhoto] = useState<CapturedPhoto | null>(null);
   const [garment, setGarment] = useState<Garment | null>(null);
-  const [status, setStatus] = useState<Status>("idle");
-  const [result, setResult] = useState<Result | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  // Guards against a slow first request overwriting a newer one's result.
-  const requestId = useRef(0);
+  const [heightCm, setHeightCm] = useState<number | null>(null);
+  const [measurements, setMeasurements] = useState<BodyMeasurements>({});
+  const [measurementSource, setMeasurementSource] =
+    useState<MeasurementSource>("declared");
+  const [fitPreference, setFitPreference] = useState<FitPreference>("regular");
+
+  const [fitStatus, setFitStatus] = useState<Status>("idle");
+  const [fit, setFit] = useState<FitRecommendation | null>(null);
+  const [fitError, setFitError] = useState<string | null>(null);
+  /**
+   * True from the moment an input changes until the new recommendation lands.
+   * Without it the panel keeps showing the previous size during the debounce,
+   * so changing fit preference looks like it did nothing.
+   */
+  const [fitStale, setFitStale] = useState(false);
+
+  const [renderStatus, setRenderStatus] = useState<Status>("idle");
+  const [result, setResult] = useState<Result | null>(null);
+  const [renderError, setRenderError] = useState<string | null>(null);
+
+  // Guard against a slow request overwriting a newer one's result.
+  const fitRequestId = useRef(0);
+  const renderRequestId = useRef(0);
+
+  const hasMeasurements = Object.values(measurements).some(
+    (value) => typeof value === "number" && value > 0,
+  );
+
+  // Debounced: measurements come from typing, and the endpoint is free but the
+  // result flickering on every keystroke is not useful.
+  useEffect(() => {
+    if (!hasMeasurements) {
+      setFitStatus("idle");
+      setFit(null);
+      setFitStale(false);
+      return;
+    }
+
+    setFitStale(true);
+    const id = ++fitRequestId.current;
+    const timer = setTimeout(async () => {
+      setFitStatus("loading");
+      setFitError(null);
+      try {
+        const response = await fetch("/api/fit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            measurements,
+            sizeChartId: SIZE_CHART_ID,
+            fitPreference,
+            measurementSource,
+          }),
+        });
+        const payload = await response.json();
+        if (id !== fitRequestId.current) return;
+
+        if (!response.ok) {
+          setFitError(payload.error ?? `Request failed (${response.status}).`);
+          setFitStatus("error");
+          setFitStale(false);
+          return;
+        }
+        setFit(payload as FitRecommendation);
+        setFitStatus("done");
+        setFitStale(false);
+      } catch {
+        if (id !== fitRequestId.current) return;
+        setFitError("Could not reach the server.");
+        setFitStatus("error");
+        setFitStale(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [measurements, fitPreference, measurementSource, hasMeasurements]);
 
   const runTryOn = useCallback(
     async (nextPhoto: CapturedPhoto, nextGarment: Garment) => {
-      const id = ++requestId.current;
-      setStatus("loading");
-      setError(null);
+      const id = ++renderRequestId.current;
+      setRenderStatus("loading");
+      setRenderError(null);
 
       try {
         const response = await fetch("/api/tryon", {
@@ -35,22 +117,20 @@ export default function Home() {
             garmentId: nextGarment.id,
           }),
         });
-
         const payload = await response.json();
-        if (id !== requestId.current) return;
+        if (id !== renderRequestId.current) return;
 
         if (!response.ok) {
-          setError(payload.error ?? `The fit request failed (${response.status}).`);
-          setStatus("error");
+          setRenderError(payload.error ?? `Request failed (${response.status}).`);
+          setRenderStatus("error");
           return;
         }
-
         setResult(payload as Result);
-        setStatus("done");
+        setRenderStatus("done");
       } catch {
-        if (id !== requestId.current) return;
-        setError("Cannot reach the server. Check that it is running, then try again.");
-        setStatus("error");
+        if (id !== renderRequestId.current) return;
+        setRenderError("Could not reach the server.");
+        setRenderStatus("error");
       }
     },
     [],
@@ -61,21 +141,22 @@ export default function Home() {
     if (garment) void runTryOn(next, garment);
   }
 
-  function handleSelect(next: Garment) {
+  function handleSelectGarment(next: Garment) {
     setGarment(next);
     if (photo) void runTryOn(photo, next);
   }
 
-  function handleClear() {
+  function handleClearPhoto() {
     setPhoto(null);
     setResult(null);
-    setStatus("idle");
-    setError(null);
-    requestId.current++;
+    setRenderStatus("idle");
+    setRenderError(null);
+    renderRequestId.current++;
   }
 
-  function handleRetry() {
-    if (photo && garment) void runTryOn(photo, garment);
+  function handleMeasurements(next: BodyMeasurements, source: MeasurementSource) {
+    setMeasurements(next);
+    setMeasurementSource(source);
   }
 
   return (
@@ -93,37 +174,93 @@ export default function Home() {
             <PhotoSource
               photo={photo}
               onCapture={handleCapture}
-              onClear={handleClear}
+              onClear={handleClearPhoto}
             />
           </Panel>
 
-          <Panel piece="B" title="The garment">
+          <Panel piece="B" title="Your measurements">
+            <MeasurementForm
+              heightCm={heightCm}
+              measurements={measurements}
+              fitPreference={fitPreference}
+              photoDataUrl={photo?.dataUrl ?? null}
+              onHeightChange={setHeightCm}
+              onMeasurementsChange={handleMeasurements}
+              onFitPreferenceChange={setFitPreference}
+            />
+          </Panel>
+
+          <Panel piece="C" title="The garment">
             <GarmentPicker
               selectedId={garment?.id ?? null}
-              onSelect={handleSelect}
-              disabled={status === "loading"}
+              onSelect={handleSelectGarment}
+              disabled={renderStatus === "loading"}
             />
           </Panel>
         </div>
 
-        <Panel piece="C" title="The fit" tone="mat">
-          <TryOnResult
-            status={status}
-            result={result}
-            error={error}
-            garmentName={garment?.name ?? null}
-            onRetry={handleRetry}
-          />
-        </Panel>
+        <div className="grid gap-6 lg:sticky lg:top-6">
+          <section>
+            <PanelHeading piece="D" title="Your size" tone="mat" />
+            <SizeRecommendation
+              status={fitStatus}
+              recommendation={fit}
+              error={fitError}
+              stale={fitStale}
+            />
+          </section>
+
+          <Panel piece="E" title="The mirror" tone="mat">
+            <TryOnResult
+              status={renderStatus}
+              result={result}
+              error={renderError}
+              garmentName={garment?.name ?? null}
+              onRetry={() => {
+                if (photo && garment) void runTryOn(photo, garment);
+              }}
+            />
+          </Panel>
+        </div>
       </div>
     </main>
   );
 }
 
+function PanelHeading({
+  piece,
+  title,
+  tone = "tissue",
+}: {
+  piece: string;
+  title: string;
+  tone?: "tissue" | "mat";
+}) {
+  const onTissue = tone === "tissue";
+  return (
+    <div className="mb-4 flex items-baseline gap-2.5">
+      <span
+        className={`font-mono text-[11px] leading-none ${
+          onTissue ? "text-graphite/45" : "text-chalk"
+        }`}
+      >
+        {piece}
+      </span>
+      <h2 className="font-display text-lg leading-none font-medium tracking-[0.14em] uppercase">
+        {title}
+      </h2>
+      <span
+        className={`h-px flex-1 translate-y-[-2px] ${
+          onTissue ? "bg-graphite/15" : "bg-chalk/20"
+        }`}
+      />
+    </div>
+  );
+}
+
 /**
- * A pattern piece on the table. Tissue panels hold input; the mat-toned panel
- * holds the mirror, so the result reads as the thing being looked at rather than
- * another form field.
+ * A pattern piece on the table. Tissue panels hold input; mat-toned panels hold
+ * output, so the results read as the things being looked at.
  */
 function Panel({
   piece,
@@ -145,23 +282,7 @@ function Panel({
           : "border border-chalk/20 bg-mat-2/60 text-tissue"
       }`}
     >
-      <div className="mb-4 flex items-baseline gap-2.5">
-        <span
-          className={`font-mono text-[11px] leading-none ${
-            onTissue ? "text-graphite/45" : "text-chalk"
-          }`}
-        >
-          {piece}
-        </span>
-        <h2 className="font-display text-lg leading-none font-medium tracking-[0.14em] uppercase">
-          {title}
-        </h2>
-        <span
-          className={`h-px flex-1 translate-y-[-2px] ${
-            onTissue ? "bg-graphite/15" : "bg-chalk/20"
-          }`}
-        />
-      </div>
+      <PanelHeading piece={piece} title={title} tone={tone} />
       {children}
     </section>
   );
