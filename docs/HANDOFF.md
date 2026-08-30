@@ -1,12 +1,12 @@
 # FitMirror — Handoff
 
-**Last updated:** 2026-08-30
-**Status:** Fit path complete and merged to `main`. Render path still gated.
-**Next session:** 2026-08-30, 11:00.
+**Last updated:** 2026-08-30, 11:00 session
+**Status:** Fit path and compliance surface complete. Render path still gated.
 **Read this first.** It is the resume point if work is interrupted.
 
 > **Where things stand.** Build items 1, 2, 4 and 6 from `02-architecture.md` §8 are done and on `main`:
-> the fit engine, `POST /api/fit`, client-side pose estimation, and the wired UI — 42 tests passing.
+> the fit engine, `POST /api/fit`, client-side pose estimation, and the wired UI. **Gate G10 closed on
+> 2026-08-30** — consent, AI labelling and the privacy notice are built (§5b). 55 tests passing.
 > All feature branches are merged and deleted; `main` is the single source of truth.
 >
 > **Items 3 and 5 (Vertex render, live upload) remain blocked** on gates only the product owner can clear.
@@ -58,18 +58,20 @@ Everything is on **`main`** (`6e90f07`). No open branches, no open PRs. PRs #1�
 lib/fit/          recommendation engine, size charts, types      ← the hero
 lib/pose/         MediaPipe landmarks → measurements, estimator
 lib/tryon/        provider interface + mock (NOT real try-on)
+lib/compliance/   per-provider processing facts; consent + label copy
 app/api/fit/      POST recommendation, GET chart discovery
 app/api/tryon/    POST render (mock provider only)
+app/privacy/      the privacy one-pager
 app/dev/pose/     dev harness for pose calibration
-components/       PhotoSource, MeasurementForm, GarmentPicker,
-                  SizeRecommendation, TryOnResult, PhotoMeasure
-docs/             this handoff + landscape, architecture, compliance, gates
+components/       Studio, ConsentGate, PhotoSource, MeasurementForm,
+                  GarmentPicker, SizeRecommendation, TryOnResult, PhotoMeasure
+docs/             this handoff + landscape, architecture, compliance, gates, privacy
 ```
 
 **Setup after clone:** `npm install`, then **`npm run setup:pose`** (vendors ~15MB of MediaPipe model +
 WASM into a gitignored folder). Skipping the second step silently breaks photo measurement.
 
-**Checks:** `npm test` (42), `npm run typecheck`, `npm run lint`, `npm run build` — all clean on `main`.
+**Checks:** `npm test` (55), `npm run typecheck`, `npm run lint`, `npm run build` — all clean on `main`.
 
 ### Adding the Vertex renderer is one file
 
@@ -104,7 +106,7 @@ Full detail in `04-prerequisite-gate.md`.
 | G7 | Vertex model access + least-privilege service account | Not started | You (after G1–G3) |
 | G8 | **Bias calibration against real photos** | Open — see §6 | Either |
 | G9 | Pre-generate demo renders so the demo runs offline | Not started | Either |
-| G10 | Consent copy, AI-generated label, privacy one-pager | Not started | Either |
+| G10 | Consent copy, AI-generated label, privacy one-pager | ✅ **Cleared** — see §5b | Done |
 
 **G1 and G2 are genuinely unresolved.** We could not confirm either from public documentation. Do not
 assume EU availability or a price — both must be checked in the console before this architecture is
@@ -135,6 +137,36 @@ committed to. If G1 fails, the compliance story in `03-compliance-uk.md` changes
 
 **Do not start** the Vertex provider until G1–G3 are green. That is the whole point of the gate.
 
+## 5b. The compliance surface (G10, done 2026-08-30)
+
+Consent, the AI-generated label and the privacy one-pager are built and wired. The design decision worth
+knowing before touching any of it:
+
+**The disclosure text is generated from the code, not written alongside it.** `lib/compliance/disclosure.ts`
+holds one record per provider — photo leaves the device?, third party?, region established?, retained?,
+AI-generated? — and `ConsentGate`, `TryOnResult` and `/privacy` all render from it. Verified by running with
+`TRYON_PROVIDER=replicate`: the consent copy named Replicate and flipped AI-generated to yes with no copy
+edited. A provider with no disclosure throws, which closes the photo path rather than asking for consent to
+something the app cannot describe.
+
+Three things here are load-bearing and should not be "tidied":
+
+- **The consent gates panel A only.** Panel B still produces a size from typed measurements. That
+  alternative is what makes consent freely given rather than a toll gate; removing it changes the legal
+  position, not just the UX.
+- **`simulated` and `aiGenerated` are separate flags.** The mock composites artwork, so it is *not*
+  AI-generated. Collapsing them into one flag would make the label a false statement.
+- **`processingRegion` stays `null` while G1 is open**, and the UI says the location is unconfirmed. A test
+  fails if an unestablished region ever produces an affirmative "Processing happens in: …" claim. **When G1
+  closes, set the region in `disclosure.ts` — do not edit any copy.**
+
+`app/page.tsx` and `app/privacy/page.tsx` are `force-dynamic` for a reason: prerendering baked in the build
+machine's provider, which would have shown consent copy describing a provider that was not running.
+
+**Not done:** no named controller or contact address (left blank rather than invented), no lawyer/DPO
+review, and this copy is written for the D2 position — **if G6 comes back YES, it needs a review and a DPIA
+first, not a first draft**. See `05-privacy-notice.md` §6.
+
 ## 5a. What is built, and what it deliberately does not do
 
 **The fit engine** (`lib/fit/`): weighted band matching (chest 0.6 / waist 0.25 / hip 0.15), fit-preference
@@ -156,6 +188,8 @@ estimated**: no landmark supports it and individual variation is far too wide to
 - **Photo-derived measurements always carry the width-under-read bias caveat.** Never suppress it.
 - **Pose landmarks only, never face embeddings** — that would make this biometric data under UK GDPR
   (`03-compliance-uk.md` §1).
+- **Three more added with G10 — see §5b:** the consent gates panel A only, `simulated` and `aiGenerated`
+  stay separate flags, and `processingRegion` stays `null` until G1 actually closes.
 
 ### Bugs found during verification — the failure modes this code drifts toward
 
@@ -186,6 +220,7 @@ open-ended bands that invented ones do not.
 | `02-architecture.md` | Enterprise MVP architecture, API design, cost controls |
 | `03-compliance-uk.md` | UK GDPR position, DPIA trigger, security controls, AI transparency |
 | `04-prerequisite-gate.md` | The checklist that must be green before coding |
+| `05-privacy-notice.md` | Consent copy, AI labelling, the privacy notice, and why they are generated |
 | `../ONBOARDING.md` | Team onboarding guide (repo root). Untracked — see §8. |
 
 ---

@@ -91,10 +91,22 @@ Some Google generative models require access approval. Find out before demo week
 - [ ] Confirm the demo runs with **wifi disabled**
 - [ ] Fit-recommendation path verified to work with zero paid API calls
 
-### G10 · Compliance artefacts
-- [ ] Consent copy drafted (only if G6 = YES)
-- [ ] "AI-generated" label visible in UI
-- [ ] One-page privacy note for judges — a strong differentiator with a retail/enterprise audience
+### G10 · Compliance artefacts — ✅ CLEARED
+- [x] **Consent copy** — `components/ConsentGate.tsx`, gating the photo panel only. Built regardless of
+      G6: the photo path exists today, so it needs consent today. If G6 comes back YES it needs a further
+      review, not a first draft.
+- [x] **"AI-generated" label visible in UI** — on the image itself, from `renderLabel()`.
+      `simulated` and `aiGenerated` are separate flags; the mock composites artwork and is correctly
+      **not** labelled AI-generated.
+- [x] **One-page privacy note** — `/privacy`, plus `05-privacy-notice.md` recording the reasoning.
+- [x] Consent and privacy copy **generated from** `lib/compliance/disclosure.ts` rather than hand-written,
+      so changing `TRYON_PROVIDER` changes the disclosure. Verified by swapping to `replicate` and
+      confirming the copy names Replicate and flips AI-generated to yes.
+- [x] A test asserts every registered provider has a disclosure on file, and that no unestablished region
+      produces an affirmative "Processing happens in: …" claim while G1 is open.
+
+**Still open within G10:** no named controller or contact address (left blank rather than invented), and
+no lawyer/DPO review. See `05-privacy-notice.md` §6.
 
 ---
 
@@ -111,7 +123,7 @@ Some Google generative models require access approval. Find out before demo week
 | G7 Vertex access | P1 | ⬜ Not started |
 | G8 Bias check | P2 | ⬜ Not started |
 | G9 Demo resilience | P2 | ⬜ Not started |
-| G10 Compliance artefacts | P2 | ⬜ Not started |
+| G10 Compliance artefacts | P2 | ✅ Cleared |
 
 **Four P0s. Two are console lookups (G1, G2), one is a 10-minute config (G3), one is a decision (G6).**
 Realistically an hour of work — but it determines whether the rest of the plan holds.

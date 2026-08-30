@@ -1,5 +1,6 @@
 "use client";
 
+import { renderLabel } from "@/lib/compliance/disclosure";
 import type { TryOnResult as Result } from "@/lib/types";
 
 interface Props {
@@ -17,6 +18,8 @@ export default function TryOnResult({
   garmentName,
   onRetry,
 }: Props) {
+  const label = status === "done" && result ? renderLabel(result) : null;
+
   return (
     <div className="space-y-3">
       <div className="tick-rule h-2 sm:ml-7" aria-hidden />
@@ -39,6 +42,19 @@ export default function TryOnResult({
                 className="tissue-in h-full w-full object-cover"
               />
               <BastingStitch />
+              {/* On the image, not only beneath it. C2PA and SynthID travel in
+                  the file; a person looking at the screen sees neither. */}
+              {label && (
+                <span
+                  className={`absolute top-3 right-3 max-w-[calc(100%-1.5rem)] px-2 py-1 font-mono text-[10px] leading-tight tracking-wide uppercase backdrop-blur-sm ${
+                    label.tone === "warn"
+                      ? "bg-redline/90 text-tissue"
+                      : "bg-graphite/85 text-chalk"
+                  }`}
+                >
+                  {label.text}
+                </span>
+              )}
             </>
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
@@ -81,11 +97,9 @@ export default function TryOnResult({
             <span>
               {result.provider} · {result.elapsedMs}ms
             </span>
-            {result.simulated && (
-              <span className="text-redline normal-case">
-                Simulated — a placeholder overlay, not a real fit
-              </span>
-            )}
+            {/* The disclosure itself sits on the image. Only the provenance
+                detail lives down here, so the two cannot drift apart. */}
+            <span className="normal-case">Not stored · discarded after this request</span>
           </>
         ) : (
           <span aria-hidden />

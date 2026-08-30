@@ -63,6 +63,30 @@ Three things to know:
 
 A dev harness for this path lives at `/dev/pose`.
 
+## Consent and disclosure
+
+The photo panel is gated behind an unbundled consent checkbox. The measurements panel is not, so declining
+still gets you a size — that alternative is what makes the consent a real choice rather than a toll gate.
+Withdrawing clears the photo, the render, and any measurement estimated from the photo. Measurements you
+typed are yours and are left alone. Consent is session-scoped and never persisted, because persisting it
+would itself be a retention decision.
+
+**The disclosure text is generated from the code, not written next to it.**
+`lib/compliance/disclosure.ts` holds one record per provider — does the photo leave the device, is a third
+party involved, is the region established, is anything retained, is the output AI-generated — and the
+consent bullets and `/privacy` render from it. Swap `TRYON_PROVIDER` and the copy changes with it. Add a
+provider with no disclosure and `getDisclosure` throws, which closes the photo path rather than asking for
+consent to something the app cannot describe. A test enforces that every registered provider has one.
+
+Two paths, two honest answers, and the UI must not collapse them: pose measurement runs **in the browser**
+and the photo never leaves the device; the try-on render **does** send it to the server.
+
+`simulated` and `aiGenerated` are separate flags. The mock composites fixed artwork, so it is neither a real
+fit nor AI-generated — labelling it "AI-generated" would be a false claim in the other direction.
+
+While gate G1 (EU/UK region) is unresolved, `processingRegion` is `null` and both the consent copy and
+`/privacy` say the location is unconfirmed. Nothing claims UK-only processing.
+
 ## The mock provider
 
 **The default provider does not perform virtual try-on.** It layers the garment artwork over your photo at
@@ -102,19 +126,27 @@ Copy `.env.example` to `.env.local`. All values are optional while using the moc
 
 ```
 app/
-  page.tsx              flow state: photo -> garment -> result
+  page.tsx              server component: resolves the active provider's disclosure
+  privacy/page.tsx      the privacy one-pager, rendered from that disclosure
   layout.tsx
   globals.css           Tailwind v4 theme (@theme, no tailwind.config)
   api/tryon/route.ts    POST: validates, resolves garment, delegates to provider
 components/
+  Studio.tsx            flow state: photo -> garment -> result
+  ConsentGate.tsx       unbundled consent, gating the photo panel only
   PhotoSource.tsx       upload + webcam capture, camera lifecycle
   GarmentPicker.tsx
-  TryOnResult.tsx       loading / error / result states
+  TryOnResult.tsx       loading / error / result states, AI-generated label
 lib/
   types.ts              Garment, TryOnRequest, TryOnResult
   garments.ts           the catalog (hardcoded; no DB yet)
+  compliance/           per-provider processing facts; consent + label copy
   tryon/                provider interface, mock, replicate, resolver
 ```
+
+`app/page.tsx` and `app/privacy/page.tsx` are `force-dynamic`. Prerendering would bake in whichever
+provider was set on the build machine, so a deploy with a different `TRYON_PROVIDER` would show consent
+copy describing a provider that is not running.
 
 Garments live in `lib/garments.ts` as inline SVG in a `0 0 100 140` box. That markup is the single source of
 truth — the picker thumbnail and the composited result both render it, so they cannot drift apart. Each

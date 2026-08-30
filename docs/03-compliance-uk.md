@@ -119,17 +119,21 @@ is doing its job.
 
 ## 8. Security controls checklist
 
-- [ ] Shopper images processed **in memory only** — never written to disk or object storage
+- [x] Shopper images processed **in memory only** — never written to disk or object storage
 - [ ] No images, measurements, or PII in application logs, including error paths
-- [ ] No personal data in URLs or query strings
+- [x] No personal data in URLs or query strings
 - [ ] Secrets in Secret Manager; **never** committed (`.env*` already gitignored in this repo)
 - [ ] Least-privilege service account — Vertex predict only, no storage write
 - [ ] HTTPS end to end; HSTS
 - [ ] Rate limiting per IP and per session (also a cost control)
 - [ ] Dependency vulnerability scan before the public demo
-- [ ] Consent checkbox unbundled, with plain-English copy naming Google Cloud as processor
-- [ ] Visible "AI-generated image" label in the UI, not only in C2PA metadata
-- [ ] Deletion is trivially demonstrable — because nothing is ever stored
+- [x] Consent checkbox unbundled, with plain-English copy **naming whichever processor is actually
+      configured** — generated from `lib/compliance/disclosure.ts`, so it will name Google Cloud once
+      Vertex lands without anyone having to remember to edit a sentence
+- [x] Visible "AI-generated image" label in the UI, not only in C2PA metadata
+- [x] Deletion is trivially demonstrable — because nothing is ever stored
+
+Drafted and implemented in `05-privacy-notice.md`, which closes gate G10.
 
 **The strongest privacy control here is architectural, not procedural: if nothing is retained, most of the
 risk surface does not exist.** Retention policies are things you can fail to honour. "We never wrote it
