@@ -3,6 +3,8 @@
 **Last updated:** 2026-08-30, 11:00 session
 **Status:** Fit path and compliance surface complete. Render path still gated.
 **Read this first.** It is the resume point if work is interrupted.
+**Lost the thread entirely?** Read `06-build-playbook.md` instead — it starts from zero and tells you what
+to type.
 
 > **Where things stand.** Build items 1, 2, 4 and 6 from `02-architecture.md` §8 are done and on `main`:
 > the fit engine, `POST /api/fit`, client-side pose estimation, and the wired UI. **Gate G10 closed on
@@ -221,6 +223,7 @@ open-ended bands that invented ones do not.
 | `03-compliance-uk.md` | UK GDPR position, DPIA trigger, security controls, AI transparency |
 | `04-prerequisite-gate.md` | The checklist that must be green before coding |
 | `05-privacy-notice.md` | Consent copy, AI labelling, the privacy notice, and why they are generated |
+| `06-build-playbook.md` | **Start here if you have lost the thread.** Phases, goals, paste-ready prompts, which skills and agents to use, cost control, memory scopes |
 | `../ONBOARDING.md` | Team onboarding guide (repo root). Untracked — see §8. |
 
 ---
