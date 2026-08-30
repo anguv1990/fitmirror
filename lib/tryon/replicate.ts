@@ -94,6 +94,7 @@ class ReplicateTryOnProvider implements TryOnProvider {
       garmentId: garment.id,
       provider: this.name,
       elapsedMs: Date.now() - started,
+      aiGenerated: true,
     };
   }
 }

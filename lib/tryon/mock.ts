@@ -44,6 +44,9 @@ class MockTryOnProvider implements TryOnProvider {
       provider: this.name,
       elapsedMs: Date.now() - started,
       simulated: true,
+      // Compositing, not generation. Claiming this was AI-generated would be a
+      // false disclosure in the opposite direction.
+      aiGenerated: false,
     };
   }
 }

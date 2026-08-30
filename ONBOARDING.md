@@ -5,19 +5,24 @@
 Based on angumani's usage over the last 30 days:
 
 Work Type Breakdown:
-  Build Feature     ████████████░░░░░░░░  60%
-  Plan Design       █████░░░░░░░░░░░░░░░  25%
-  Improve Quality   ███░░░░░░░░░░░░░░░░░  15%
+  Build Feature     ████████████████████  35%
+  Plan Design       ███████████░░░░░░░░░  20%
+  Write Docs        ███████████░░░░░░░░░  20%
+  Improve Quality   █████████░░░░░░░░░░░  15%
+  Debug Fix         ██████░░░░░░░░░░░░░░  10%
 
-_Note: drawn from a single session in this window — a snapshot of one project's
-arc (scaffold → design → ship), not an established team pattern._
+_Note: drawn from a single session in this window — one project's full arc, from
+`git clone` through four merged PRs. It is a snapshot, not an established team
+pattern. Bars are scaled to the largest value in each section, so a small number
+can still show a full bar; trust the numeral._
 
 Top Skills & Commands:
-  /frontend-design  ████████████████████  1x/month
   /plan             ████████████████████  1x/month
+  /frontend-design  ████████████████████  1x/month
+  /team-onboarding  ████████████████████  1x/month
 
 Top MCP Servers:
-  claude-in-chrome  ████████████████████  28 calls
+  claude-in-chrome  ████████████████████  69 calls
 
 ## Your Setup Checklist
 
@@ -26,11 +31,12 @@ Top MCP Servers:
 - [ ] Run `npm install`, then `npm run setup:pose` — the second one vendors the MediaPipe model and WASM (~15MB) into a gitignored folder. Skip it and the photo-measurement path won't start. It's a one-time step, and it's what lets the demo run with wifi off.
 
 ### MCP Servers to Activate
-- [ ] claude-in-chrome — Drives your actual Chrome browser: opens pages, clicks, fills forms, takes screenshots, reads console logs and network requests. This was by far the most-used tool (28 calls) — it's how UI changes get verified in a real browser instead of assumed working. Install the Claude for Chrome extension, then grant per-site permissions in the extension settings before first use.
+- [ ] claude-in-chrome — Drives your actual Chrome browser: opens pages, clicks, fills forms, takes screenshots, reads console logs and network requests. By far the most-used tool (69 calls) — it's how UI changes get verified in a real browser instead of assumed working, and how the retailer size charts were read off live pages after automated fetches were blocked. Install the Claude for Chrome extension, then grant per-site permissions in the extension settings before first use.
 
 ### Skills to Know About
 - [ ] /plan — Enters plan mode: Claude researches and writes an implementation plan to a file for your approval before touching any code. Worth using on anything non-trivial; it catches wrong assumptions while they're still cheap to fix.
 - [ ] /frontend-design — Design guidance for building or reworking UI. Pushes toward a deliberate visual direction — palette, typography, layout — instead of generic defaults. Use it when you're creating new UI or an interface feels templated.
+- [ ] /team-onboarding — Generates this guide from your own Claude Code usage. Re-run it as the project moves; the numbers above go stale.
 
 ## Team Tips
 

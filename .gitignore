@@ -24,3 +24,8 @@ next-env.d.ts
 
 # MediaPipe assets — vendored by `npm run setup:pose`, too large for git
 /public/mediapipe/
+
+# Photos of real people. Calibration input for gate G8 stays on the machine that
+# captured it — this repo is public, and a body photo is personal data whether or
+# not it is anyone's job to say so. Do not remove this rule to "just commit one".
+/assets/

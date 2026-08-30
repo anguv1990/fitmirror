@@ -23,5 +23,14 @@ export function getProvider(): TryOnProvider {
   return provider;
 }
 
+/**
+ * Every registered provider name. Exported so the compliance tests can assert
+ * that each one has a processing disclosure on file — a provider with no stated
+ * handling of the photo must not be reachable.
+ */
+export function providerNames(): string[] {
+  return Object.keys(PROVIDERS);
+}
+
 export type { TryOnProvider };
 export { ProviderConfigError } from "./types";
