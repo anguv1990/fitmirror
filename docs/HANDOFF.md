@@ -106,7 +106,7 @@ Full detail in `04-prerequisite-gate.md`.
 | G5 | Source a real brand **size chart** with body measurements | ✅ **Cleared** — Boden (women's) + Seasalt (men's) | Done |
 | G6 | Decide: does the live demo allow **audience uploads**? | Open | You |
 | G7 | Vertex model access + least-privilege service account | Not started | You (after G1–G3) |
-| G8 | **Bias calibration against real photos** | Open — see §6 | Either |
+| G8 | **Bias calibration against real photos** | 🟡 In progress — see §5c | Either |
 | G9 | Pre-generate demo renders so the demo runs offline | Not started | Either |
 | G10 | Consent copy, AI-generated label, privacy one-pager | ✅ **Cleared** — see §5b | Done |
 
@@ -210,6 +210,34 @@ All five came from real data or real browsers, not unit tests:
 **The pattern:** 1 and 2 are the same bug shape (ranking far-out sizes by a relative measure). 5 recurred
 because the in-range branch was fixed and the out-of-range branch was missed. Real charts have gaps and
 open-ended bands that invented ones do not.
+
+## 5c. Pose calibration, first real run (G8, 2026-08-30)
+
+Harness at **`/dev/calibrate`**; statistics in `lib/pose/calibration.ts`. Browser-only, photos never
+uploaded, export is numbers-only so findings outlive the images.
+
+**The headline: the first six real photos found two defects in a path that 13 tests had been passing.**
+
+1. **Back views were accepted** and returned a confident chest measurement. The rotation gate compares
+   shoulder *depth*, which cannot tell "square-on facing you" from "square-on facing away". Fixed with a
+   `facing_away` gate on left/right x ordering, verified against real MediaPipe output.
+2. **The synthetic fixture was mirrored** — it placed the subject's left shoulder at the lower x, so every
+   pose test had been running against a back-to-front body. That is why defect 1 survived.
+
+**Still open, and do not paper over it:** hip estimates came out at **72.1cm and 66.7cm** against chests
+near 100cm, which is not a plausible adult. The cause is structural rather than calibration —
+`HIP_WIDTH_TO_CIRCUMFERENCE = 3.1` is applied to MediaPipe's hip **joint centres** (~23cm apart), not the
+outer hip breadth (~35cm). Shoulder breadth resolves to ~40.9cm, so the scale itself is fine. Decide
+whether to use different landmarks or stop emitting `hipCm` from photos, as waist already does. **Do not
+just raise the constant to 4.3** — that fits the symptom.
+
+**Not yet possible:** the actual error. That needs a confirmed height (175cm was assumed) and tape
+measurements. `MIN_SUBJECTS_FOR_MULTIPLIER_CHANGE = 8` deliberately blocks any multiplier change until
+there are 8 distinct **people** — six photos of one person is one observation repeated six times, and the
+documented bias varies by sex, so a single-subject sample cannot detect it even in principle.
+
+**Calibration photos live in `assets/`, gitignored.** They are personal data. They stay on the machine that
+captured them.
 
 ---
 

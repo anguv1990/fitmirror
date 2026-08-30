@@ -63,6 +63,7 @@ export type PoseQualityIssue =
   | "low_visibility"
   | "no_full_body"
   | "rotated"
+  | "facing_away"
   | "implausible_result";
 
 export interface MeasurementEstimate {
@@ -125,6 +126,24 @@ export function estimateMeasurements({
       issues: [...issues, "no_full_body"],
       message:
         "Could not see you head to feet. A full-length photo is needed to work out the scale.",
+    };
+  }
+
+  // Orientation check before the rotation check: a back view is square-on, so
+  // the depth test below passes it happily. Found by running real photos through
+  // the calibration harness (gate G8) — a photo taken from behind returned a
+  // confident chest measurement.
+  //
+  // MediaPipe reports landmarks in image space. Facing the camera, the subject's
+  // own left shoulder appears on the viewer's right, so LEFT_SHOULDER.x is the
+  // larger value. Facing away, that ordering inverts.
+  if (landmarks[POSE.LEFT_SHOULDER].x < landmarks[POSE.RIGHT_SHOULDER].x) {
+    return {
+      ok: false,
+      measurements: {},
+      issues: [...issues, "facing_away"],
+      message:
+        "You appear to be facing away from the camera. A front-on photo is needed — a back view measures across the shoulder blades, not the chest.",
     };
   }
 
