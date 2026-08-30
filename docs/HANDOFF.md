@@ -252,6 +252,7 @@ captured them.
 | `04-prerequisite-gate.md` | The checklist that must be green before coding |
 | `05-privacy-notice.md` | Consent copy, AI labelling, the privacy notice, and why they are generated |
 | `06-build-playbook.md` | **Start here if you have lost the thread.** Phases, goals, paste-ready prompts, which skills and agents to use, cost control, memory scopes |
+| `07-body-measurement-buy-vs-build.md` | 3DLOOK / Mobile Tailor evaluation, SMPL licensing trap, the `MeasurementProvider` seam, gates G11–G15 |
 | `../ONBOARDING.md` | Team onboarding guide (repo root). Untracked — see §8. |
 
 ---
