@@ -152,9 +152,9 @@ console-only facts and stop searching for them.
 it is fully specified and safe to hand to an AFK agent, and `ready-for-human` where it needs a tape
 measure, a physical device or people. See `docs/agents/issue-tracker.md` for the conventions.
 
-6. **G9 — demo resilience.** #12 — verify the fit path runs with wifi disabled and zero paid API calls.
-   Pre-generating *Vertex* renders stays blocked on G1–G3; with no real renderer yet, the offline
-   mechanism is provable against the mock.
+6. **G9 — demo resilience.** ~~#12~~ **done** — the fit path makes no external request at all; see §5g.
+   Pre-generating *Vertex* renders stays blocked on G1–G3. One manual step is left: turn the wifi off
+   and walk the demo once.
 7. **Hip, properly** — #17. Recovering it needs a body outline via MediaPipe Image Segmenter, not pose
    landmarks. With a side photo it also gives depth, so circumference becomes an ellipse approximation
    rather than a population multiplier — which would improve chest too. Real work, not a constant change.
@@ -169,6 +169,33 @@ measure, a physical device or people. See `docs/agents/issue-tracker.md` for the
 11. **Fit polish** — #15, garment-category awareness in size chart selection.
 
 **Do not start** the Vertex provider until G1–G3 are green. That is the whole point of the gate.
+
+## 5g. The demo makes no external request (G9, #12)
+
+Traced against a **production** build in a real browser, because that is what runs at the venue: the page
+load is **17 requests, every one to the app's own origin**, and `POST /api/fit` returned UK 14 at 81%
+confidence among them. On the default `mock` + `local` configuration nothing outbound happens at all.
+
+Three things that would each have broken this quietly, all checked:
+
+- **Fonts.** `next/font/google` reads as a network dependency but downloads at *build* time and vendors
+  the files — 25 `.woff2` shipped, no `googleapis`/`gstatic` reference in the output. **The asymmetry
+  matters: the build needs network, the running app does not.** Do not plan to rebuild at the venue.
+- **MediaPipe.** `lib/pose/estimator.ts` points at `/mediapipe/…`, root-relative and therefore
+  same-origin by construction — it cannot silently become a CDN fetch. Both assets confirmed served
+  locally. This is what `npm run setup:pose` is for.
+- **The default providers.** The only external `fetch` in the tree is `lib/tryon/replicate.ts`, which is
+  not the default.
+
+**Locked in by `lib/offline.test.ts`**, which traps `globalThis.fetch` and asserts the defaults resolve
+to `mock` / `local` and call nothing. The real risk it guards is a changed default: a paid provider
+reached by a fresh clone bills on first page load, and it looks fine on the developer's machine.
+
+**Not yet done, and it is a human step:** actually disabling wifi and walking the demo. What is proven is
+that the app *makes no external request* — the mechanism behind running offline, not a substitute for
+having watched it.
+
+---
 
 ## 5f. Dev harnesses are excluded by extension, not by a guard (#14)
 

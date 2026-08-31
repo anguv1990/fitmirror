@@ -154,10 +154,29 @@ covers *garment* images, and clearing one does not clear the other.
 (`08-vton-2026-and-next.md` §2) is how a retailer turns existing catalogue imagery into try-on-ready assets
 without a reshoot.
 
-### G9 · Demo resilience
-- [ ] Pre-generate every render on the scripted happy path (`02-architecture.md` §5, layer 2)
-- [ ] Confirm the demo runs with **wifi disabled**
-- [ ] Fit-recommendation path verified to work with zero paid API calls
+### G9 · Demo resilience — **partially cleared 2026-08-31**
+
+- [ ] Pre-generate every render on the scripted happy path (`02-architecture.md` §5, layer 2).
+      **Blocked on G1–G3** — there is no real renderer to pre-generate from yet.
+- [x] **Fit-recommendation path verified to work with zero paid API calls.** A production build was run
+      and the whole page load traced in a real browser: **17 requests, every one to the app's own
+      origin**, including the `POST /api/fit` that returned UK 14 at 81% confidence.
+- [x] **No external host is contacted on the default configuration.** `mock` + `local` make no outbound
+      call. The only external `fetch` in the codebase is `lib/tryon/replicate.ts`, which is not the
+      default and is non-functional by design.
+- [x] **Fonts are self-hosted.** `next/font/google` downloads at *build* time and vendors the files — 25
+      `.woff2` in `.next/static/media/`, and no `fonts.googleapis.com` or `fonts.gstatic.com` reference
+      survives into the output. **Note the asymmetry: the build needs network, the running app does not.**
+      Do not plan to rebuild at the venue.
+- [x] **MediaPipe loads from the vendored copy, not a CDN.** `lib/pose/estimator.ts` points at
+      `/mediapipe/wasm` and `/mediapipe/pose_landmarker_lite.task` — root-relative, so same-origin by
+      construction. Both confirmed served locally (5.8MB model, 323KB wasm).
+- [x] **Locked in by test** — `lib/offline.test.ts` traps `globalThis.fetch` and asserts the default
+      providers resolve to `mock` / `local` and make no network call. It includes a test that the trap
+      itself fires, because a trap that silently failed to install would make the rest vacuous.
+- [ ] **Still to do by hand: actually turn the wifi off and walk the demo.** What is proven above is
+      that the app *makes no external request*, which is the mechanism behind running offline — but it
+      is not the same as having watched it work with the interface down. Two minutes, worth doing.
 
 ### G10 · Compliance artefacts — ✅ CLEARED
 - [x] **Consent copy** — `components/ConsentGate.tsx`, gating the photo panel only. Built regardless of
@@ -191,7 +210,7 @@ no lawyer/DPO review. See `05-privacy-notice.md` §6.
 | G7 Vertex access | P1 | ⬜ Not started |
 | G8 Bias check | P2 | 🟡 In progress — 2 defects fixed, hip issue open |
 | G16 Garment photography | P1 | 🟡 Seam built, images not sourced |
-| G9 Demo resilience | P2 | ⬜ Not started |
+| G9 Demo resilience | P2 | 🟡 Offline path verified; pre-generation blocked on G1–G3 |
 | G10 Compliance artefacts | P2 | ✅ Cleared |
 
 **Four P0s. Two are console lookups (G1, G2), one is a 10-minute config (G3), one is a decision (G6).**
