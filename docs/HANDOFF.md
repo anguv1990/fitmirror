@@ -1,18 +1,24 @@
 # FitMirror — Handoff
 
-**Last updated:** 2026-08-30, 11:00 session
-**Status:** Fit path and compliance surface complete. Render path still gated.
+**Last updated:** 2026-08-31
+**Status:** Everything buildable without a gate is done. The render path is blocked on you.
 **Read this first.** It is the resume point if work is interrupted.
 **Lost the thread entirely?** Read `06-build-playbook.md` instead — it starts from zero and tells you what
 to type.
 
-> **Where things stand.** Build items 1, 2, 4 and 6 from `02-architecture.md` §8 are done and on `main`:
-> the fit engine, `POST /api/fit`, client-side pose estimation, and the wired UI. **Gate G10 closed on
-> 2026-08-30** — consent, AI labelling and the privacy notice are built (§5b). 55 tests passing.
-> All feature branches are merged and deleted; `main` is the single source of truth.
+> **Where things stand.** Everything is on **`main`** (`0504d45`). PRs #1–#7 merged, no open PRs, no
+> branches other than `main`. **101 tests**, typecheck, lint and build all clean.
 >
-> **Items 3 and 5 (Vertex render, live upload) remain blocked** on gates only the product owner can clear.
-> Nothing further can be built on the render path until then.
+> Done: the fit engine and `POST /api/fit`; client-side pose measurement; the compliance surface (G10);
+> the measurement seam; the calibration harness (G8, two defects found and fixed); the size comparison;
+> the garment image seam (G16 opened); and the hip estimate removed.
+>
+> **Nothing further can be built on the render path** until G1, G2 and G3 clear — all three need your GCP
+> console. G16 needs licensed garment photography, which is a rights problem, not a code one.
+>
+> **If the demo were tomorrow, the fit half is the story and it is ready today**: a size, a reason, a
+> confidence score and a two-size comparison, offline, at zero cost. See §5e for why that is the right
+> pitch rather than a fallback.
 
 ---
 
@@ -54,26 +60,31 @@ building a demo we would have to throw away. See `01-landscape.md`.
 
 ## 3. Current state of the repo
 
-Everything is on **`main`** (`6e90f07`). No open branches, no open PRs. PRs #1–#4 all merged.
+Everything is on **`main`** (`0504d45`). No open branches, no open PRs. PRs #1–#7 all merged.
 
 ```
 lib/fit/          recommendation engine, size charts, types      ← the hero
 lib/pose/         MediaPipe landmarks → measurements, estimator
 lib/tryon/        provider interface + mock (NOT real try-on)
+lib/measure/      measurement seam: local (browser), 3dlook (stub)
 lib/compliance/   per-provider processing facts; consent + label copy
+lib/garmentImage.ts  garment photography resolution; fails before spending
 app/api/fit/      POST recommendation, GET chart discovery
 app/api/tryon/    POST render (mock provider only)
+app/api/measure/  POST measurement, for providers that transmit
 app/privacy/      the privacy one-pager
-app/dev/pose/     dev harness for pose calibration
-components/       Studio, ConsentGate, PhotoSource, MeasurementForm,
-                  GarmentPicker, SizeRecommendation, TryOnResult, PhotoMeasure
-docs/             this handoff + landscape, architecture, compliance, gates, privacy
+app/dev/pose/     dev harness for the pose path
+app/dev/calibrate/  G8 calibration harness, browser-only
+components/       Studio, ConsentGate, PhotoSource, MeasurementForm, GarmentPicker,
+                  SizeRecommendation, SizeComparison, TryOnResult, PhotoMeasure
+docs/             this handoff + landscape, architecture, compliance, gates,
+                  privacy, playbook, 3DLOOK evaluation, 2026 VTON landscape
 ```
 
 **Setup after clone:** `npm install`, then **`npm run setup:pose`** (vendors ~15MB of MediaPipe model +
 WASM into a gitignored folder). Skipping the second step silently breaks photo measurement.
 
-**Checks:** `npm test` (55), `npm run typecheck`, `npm run lint`, `npm run build` — all clean on `main`.
+**Checks:** `npm test` (101), `npm run typecheck`, `npm run lint`, `npm run build` — all clean on `main`.
 
 ### Adding the Vertex renderer is one file
 
@@ -81,8 +92,10 @@ WASM into a gitignored folder). Skipping the second step silently breaks photo m
 mock default. Adding Vertex = write `lib/tryon/vertex.ts`, register it in `lib/tryon/index.ts`. Nothing else
 changes.
 
-`lib/tryon/replicate.ts` is a **non-functional** worked example — its `garmentImageUrl` throws by design.
-Delete or replace it when a real provider lands.
+`lib/tryon/replicate.ts` is a **non-functional** worked example. It now throws via the shared
+`requireGarmentPhotograph` rather than its own stub, because **no garment in the catalogue has a
+photograph** (G16). That is the seam working, not a bug: a hosted model handed vector artwork returns a
+confident, useless render and bills for it. Delete or replace the file when a real provider lands.
 
 ### What the mock does NOT do
 
@@ -106,9 +119,11 @@ Full detail in `04-prerequisite-gate.md`.
 | G5 | Source a real brand **size chart** with body measurements | ✅ **Cleared** — Boden (women's) + Seasalt (men's) | Done |
 | G6 | Decide: does the live demo allow **audience uploads**? | Open | You |
 | G7 | Vertex model access + least-privilege service account | Not started | You (after G1–G3) |
-| G8 | **Bias calibration against real photos** | 🟡 In progress — see §5c | Either |
+| G8 | **Bias calibration against real photos** | 🟡 Harness built, 2 defects fixed; needs tape measurements — §5c | Either |
 | G9 | Pre-generate demo renders so the demo runs offline | Not started | Either |
 | G10 | Consent copy, AI-generated label, privacy one-pager | ✅ **Cleared** — see §5b | Done |
+| G16 | **Garment photography** — blocks every hosted renderer | 🟡 Seam built, images not sourced | You (rights) |
+| G11–G15 | 3DLOOK gates: API pricing, residency, DPA, trial, Article 9 re-read | Open, only if buying — `07-…md` §7 | You |
 
 **G1 and G2 are genuinely unresolved.** We could not confirm either from public documentation. Do not
 assume EU availability or a price — both must be checked in the console before this architecture is
@@ -118,26 +133,57 @@ committed to. If G1 fails, the compliance story in `03-compliance-uk.md` changes
 
 ---
 
-## 5. Pick up here at 11:00
+## 5. Pick up here
 
-**Blocked on you — nothing else can start until these move:**
+### Blocked on you — the render path cannot move without these
 
-1. **G1** — is `virtual-try-on-001` available in an EU/UK region? GCP console. Console lookup, minutes.
-2. **G2** — exact per-image price. Console / pricing calculator.
+1. **G1** — is `virtual-try-on-001` available in an EU/UK region? Console lookup, minutes.
+2. **G2** — exact per-image price.
 3. **G3** — budget alert + hard cap, **before the first API call**.
-4. **G6** — do audience uploads happen at the demo? Yes ⇒ a DPIA is required first.
+4. **G6** — audience uploads at the demo? Yes ⇒ a DPIA is required *first*, and it is days of work.
+5. **G16** — licensed garment photography. A rights problem, not a code one; the seam is built and waiting.
 
-**Buildable without any gate, if you want progress in parallel:**
+**G1 and G2 have now survived two attempts to resolve them from public documentation.** Treat them as
+console-only facts and stop searching for them.
 
-5. **G8 — calibrate the pose estimator against real photos.** This is the most valuable unblocked work.
-   The estimator has *only ever* seen synthetic landmarks in tests. Its width-to-circumference multipliers
-   (`SHOULDER_TO_CHEST_CIRCUMFERENCE = 2.45`, `HIP_WIDTH_TO_CIRCUMFERENCE = 3.1` in `lib/pose/measure.ts`)
-   are population averages, uncalibrated. Use `/dev/pose` with real full-length photos across a range of
-   body types and compare against tape measurements.
+### Buildable without a gate, in rough value order
+
 6. **G9 — pre-generate the demo renders** so the scripted path costs nothing and cannot fail on venue wifi.
-7. Polish the fit UI, or add garment-category awareness to the chart selection.
+   With no real renderer yet this means the mock, which still proves the offline mechanism.
+7. **Hip, properly** — recovering it needs a body outline via MediaPipe Image Segmenter, not pose
+   landmarks. With a side photo it also gives depth, so circumference becomes an ellipse approximation
+   rather than a population multiplier — which would improve chest too. Real work, not a constant change.
+8. **G8 tape measurements** — the calibration harness is built and waiting for ground truth. Needs a
+   confirmed height plus a tape chest, across 8 distinct people before any multiplier moves.
+9. Remove `/dev/pose` and `/dev/calibrate` from the production build, and delete `lib/tryon/replicate.ts`.
+10. Mobile layout is still inspection-only. Worth a real device check before the demo.
 
 **Do not start** the Vertex provider until G1–G3 are green. That is the whole point of the gate.
+
+## 5e. The strategic position — read before writing the demo script
+
+**Google shut down its standalone Doppl app on 30 April 2026 and moved virtual try-on into Google Search
+and Shopping — US, UK and India.** Shoppers upload one photo and see themselves in billions of listings,
+free. Zalando, Zara and L'Agence are running campaigns on it.
+
+**The render is commoditised, in our market, now.** Decision D1 — fit recommendation as the hero — has
+aged well, and this is the evidence rather than a rationalisation. Anything pitched as "we show the garment
+on your body" competes with the search box at a price of zero.
+
+**What Google does not do is tell you which size to order.** That is what `components/SizeComparison.tsx`
+answers — the recommended size against the next-best one, band by band, attacking bracketing directly. It
+is deliberately *not* two renders: no commercially available model varies its output by size, so two
+identical images captioned with different sizes would be a false visual claim, and the panel says so.
+
+It is also what the 2026 fit-aware research thread (FitVTON, FitControler, the FIT dataset) has now
+identified as the open problem. FitVTON controls fit through 16 body-size prototypes and states it cannot
+express continuous measurements or centimetre-level ease — which is exactly what `lib/fit/recommend.ts`
+already does.
+
+**So say it out loud in the demo:** Google gives the picture away; we do the part it does not. That is a
+stronger position than implying the render is the product. Full detail in `08-vton-2026-and-next.md`.
+
+---
 
 ## 5b. The compliance surface (G10, done 2026-08-30)
 
@@ -299,13 +345,14 @@ no mobile app, no multi-brand catalogue, no production SLA. Footwear and tailori
 
 ## 8. Loose ends
 
-- **`ONBOARDING.md` is untracked** at the repo root. It is complete — team name FitMirror, no starter task,
-  tips drawn from the repo conventions — but was never committed. Decide whether it belongs in this repo or
-  in team docs.
+- **`ONBOARDING.md` stats go stale.** It is committed and complete, but its usage figures are a snapshot.
+  Re-run `/team-onboarding` when the project moves on.
 - **`lib/tryon/replicate.ts` is dead weight.** Non-functional by design; delete or replace when a real
   provider lands.
-- **`app/dev/pose` ships in the production build.** Harmless and clearly labelled dev-only, but it is a
-  route on the public surface. Remove before anything real.
+- **`app/dev/pose` and `app/dev/calibrate` ship in the production build.** Both are clearly labelled
+  dev-only, but they are routes on the public surface, and the calibration harness accepts photo uploads.
+  Remove before anything real.
+- **`assets/` holds real photos of people**, gitignored, calibration input for G8 only. Never commit them.
 - **Two `postcss` advisories** via Next 15, build-time CSS processing only. Fix requires Next 16, a major
   upgrade. Deliberately left alone.
 - **Mobile layout is unverified.** The browser tooling could not emulate a viewport; responsive behaviour is
