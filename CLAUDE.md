@@ -138,6 +138,25 @@ wide or open-ended band beat a much nearer narrow one. Keep the decay absolute.
 the Vertex provider until G1 (EU/UK region), G2 (price) and G3 (budget hard cap) are cleared** — all three
 need the product owner's GCP console. Work not depending on a gate proceeds normally.
 
+## Agent skills
+
+Configuration for the `mattpocock-skills` plugin. Written by `/setup-matt-pocock-skills`;
+edit `docs/agents/*.md` directly rather than re-running it.
+
+### Issue tracker
+
+GitHub Issues on `anguv1990/fitmirror`, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles, label strings unchanged. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context, adapted to this repo: `CONTEXT.md` is the glossary and the numbered
+`docs/NN-topic.md` files are the decision records, in place of a `docs/adr/` tree.
+See `docs/agents/domain.md`.
+
 ## Docs
 
 `docs/06-build-playbook.md` — phases, goals, paste-ready prompts, cost control, memory scopes. Start here.
