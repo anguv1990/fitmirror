@@ -161,13 +161,33 @@ measure, a physical device or people. See `docs/agents/issue-tracker.md` for the
 8. **G8 ground truth** — #10 (tape measurements plus a confirmed height, to quantify the chest error) and
    #11 (widen to 8 distinct people). The harness is built and waiting. **No multiplier moves until both
    are done**: six photos of one person is one observation repeated, and the documented bias varies by sex.
-9. **Trim the production surface** — #14. Remove `/dev/pose` and `/dev/calibrate` from the production
-   build. `lib/tryon/replicate.ts` is deliberately *not* in that issue: it goes when a real provider lands,
-   which makes it downstream of G1–G3 rather than unblocked work.
+9. ~~**Trim the production surface** — #14.~~ **Done.** `/dev/pose` and `/dev/calibrate` are excluded
+   from the production build by extension rather than by a runtime guard, so the code is never compiled —
+   see §5f. `lib/tryon/replicate.ts` was deliberately *not* in that issue: it goes when a real provider
+   lands, which makes it downstream of G1–G3 rather than unblocked work.
 10. **Mobile layout** — #13. Still inspection-only; needs a real device before the demo.
 11. **Fit polish** — #15, garment-category awareness in size chart selection.
 
 **Do not start** the Vertex provider until G1–G3 are green. That is the whole point of the gate.
+
+## 5f. Dev harnesses are excluded by extension, not by a guard (#14)
+
+`app/dev/pose` and `app/dev/calibrate` are named `page.dev.tsx`. `next.config.ts` includes `dev.tsx` in
+`pageExtensions` **only when `NODE_ENV === "development"`**, and Next resolves pages by globbing
+`page.{ext}`, so in a production build the file is never matched and never compiled.
+
+**Why not a `notFound()` guard.** A guard leaves the route present and the code in the bundle — the
+calibration harness is 372 lines that accept photo uploads, and "unreachable" is a weaker claim than "not
+shipped". Verified after the change: the production route list is `/`, `/_not-found`, `/api/fit`,
+`/api/measure`, `/api/tryon`, `/privacy`, and `SHOULDER_TO_CHEST_CIRCUMFERENCE`, `CALIBRATED_KEYS` and
+`suggestedMultiplier` appear nowhere under `.next/`.
+
+**The consequence to remember:** the harnesses exist under `npm run dev` and nowhere else. Both were
+checked in a real browser after the change — `/dev/pose` renders and `/dev/calibrate` runs, exports and
+still reports the live multipliers. If you ever need one against a production build, that is now a
+deliberate config change, not an accident.
+
+---
 
 ## 5e. The strategic position — read before writing the demo script
 
@@ -359,10 +379,8 @@ no mobile app, no multi-brand catalogue, no production SLA. Footwear and tailori
   Re-run `/team-onboarding` when the project moves on.
 - **`lib/tryon/replicate.ts` is dead weight.** Non-functional by design; delete or replace when a real
   provider lands.
-- **`app/dev/pose` and `app/dev/calibrate` ship in the production build** — **#14**. Both are clearly
-  labelled dev-only, but they are routes on the public surface, and the calibration harness accepts photo
-  uploads. Remove before anything real; whatever mechanism is used must keep `/dev/calibrate` working in
-  `npm run dev`, because G8 is not finished with it.
+- ~~**`app/dev/pose` and `app/dev/calibrate` ship in the production build**~~ — **closed by #14**, see
+  §5f. Both still work under `npm run dev`, which G8 still needs.
 - **`assets/` holds real photos of people**, gitignored, calibration input for G8 only. Never commit them.
 - **Two `postcss` advisories** via Next 15, build-time CSS processing only. Fix requires Next 16, a major
   upgrade. **Deliberately left alone — no issue filed**, so that the decision is not quietly reopened by
