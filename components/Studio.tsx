@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ConsentGate from "@/components/ConsentGate";
 import GarmentPicker from "@/components/GarmentPicker";
 import MeasurementForm from "@/components/MeasurementForm";
@@ -16,7 +16,8 @@ import type {
   FitRecommendation,
   MeasurementSource,
 } from "@/lib/fit/types";
-import { DEFAULT_SIZE_CHART_ID } from "@/lib/fit/sizeCharts";
+import { chartMismatch } from "@/lib/chartMatch";
+import { DEFAULT_SIZE_CHART_ID, getSizeChart } from "@/lib/fit/sizeCharts";
 import type { Garment, TryOnResult as Result } from "@/lib/types";
 
 type Status = "idle" | "loading" | "done" | "error";
@@ -60,6 +61,17 @@ export default function Studio({
   const [fitPreference, setFitPreference] = useState<FitPreference>("regular");
   const [sizeChartId, setSizeChartId] = useState(DEFAULT_SIZE_CHART_ID);
 
+  /**
+   * An impossible garment/chart pairing — e.g. a dress against a menswear
+   * chart. Suppressing the size rather than captioning it follows the rule
+   * already applied to `unreliable` measurements: a number known to be
+   * meaningless must not reach the shopper, while the explanation still does.
+   */
+  const mismatch = useMemo(
+    () => chartMismatch(garment, getSizeChart(sizeChartId)),
+    [garment, sizeChartId],
+  );
+
   const [fitStatus, setFitStatus] = useState<Status>("idle");
   const [fit, setFit] = useState<FitRecommendation | null>(null);
   const [fitError, setFitError] = useState<string | null>(null);
@@ -85,7 +97,7 @@ export default function Studio({
   // Debounced: measurements come from typing, and the endpoint is free but the
   // result flickering on every keystroke is not useful.
   useEffect(() => {
-    if (!hasMeasurements) {
+    if (!hasMeasurements || mismatch) {
       setFitStatus("idle");
       setFit(null);
       setFitStale(false);
@@ -129,7 +141,7 @@ export default function Studio({
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [measurements, fitPreference, measurementSource, sizeChartId, hasMeasurements]);
+  }, [measurements, fitPreference, measurementSource, sizeChartId, hasMeasurements, mismatch]);
 
   const runTryOn = useCallback(
     async (nextPhoto: CapturedPhoto, nextGarment: Garment) => {
@@ -265,13 +277,19 @@ export default function Studio({
         <div className="grid gap-6 lg:sticky lg:top-6">
           <section>
             <PanelHeading piece="D" title="Your size" tone="mat" />
-            <SizeRecommendation
-              status={fitStatus}
-              recommendation={fit}
-              error={fitError}
-              stale={fitStale}
-            />
-            {fitStatus === "done" && (
+            {mismatch ? (
+              <p className="border border-redline/40 bg-tissue p-4 text-sm text-graphite">
+                {mismatch}
+              </p>
+            ) : (
+              <SizeRecommendation
+                status={fitStatus}
+                recommendation={fit}
+                error={fitError}
+                stale={fitStale}
+              />
+            )}
+            {!mismatch && fitStatus === "done" && (
               <div className="mt-3">
                 <SizeComparison
                   recommendation={fit}

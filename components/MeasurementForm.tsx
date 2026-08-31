@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { measureFromClient } from "@/lib/measure/client";
 import { measurementNotes, toBodyMeasurements } from "@/lib/measure/types";
-import { SIZE_CHARTS } from "@/lib/fit/sizeCharts";
+import { AUDIENCE_LABEL, SIZE_CHARTS } from "@/lib/fit/sizeCharts";
 import type { BodyMeasurements, FitPreference, MeasurementSource } from "@/lib/fit/types";
 
 interface Props {
@@ -87,6 +87,7 @@ export default function MeasurementForm({
 
   const chart = SIZE_CHARTS.find((c) => c.id === sizeChartId);
 
+
   return (
     <div className="space-y-3.5">
       <label className="block">
@@ -100,7 +101,7 @@ export default function MeasurementForm({
         >
           {SIZE_CHARTS.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.source}
+              {AUDIENCE_LABEL[c.audience]} — {c.source}
             </option>
           ))}
         </select>

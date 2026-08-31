@@ -1,4 +1,14 @@
-import type { SizeChart } from "./types";
+import type { ChartAudience, SizeChart } from "./types";
+
+/**
+ * How each audience is named to a shopper. Lives here rather than in a
+ * component because both the chart picker and the mismatch message need it,
+ * and two copies would drift.
+ */
+export const AUDIENCE_LABEL: Record<ChartAudience, string> = {
+  womens: "Women's",
+  mens: "Men's",
+};
 
 /**
  * Size charts.
@@ -33,6 +43,7 @@ import type { SizeChart } from "./types";
 const bodenWomens: SizeChart = {
   id: "boden-womens",
   source: "Boden UK womenswear, retrieved 2026-08-29",
+  audience: "womens",
   verified: true,
   entries: [
     { size: "UK 4", chestCm: [60, 82], waistCm: [45, 64], hipCm: [65, 87] },
@@ -71,6 +82,7 @@ const bodenWomens: SizeChart = {
 const seasaltMens: SizeChart = {
   id: "seasalt-mens",
   source: "Seasalt Cornwall menswear, retrieved 2026-08-29",
+  audience: "mens",
   verified: true,
   entries: [
     { size: "S", chestCm: [89, 94], waistCm: [74, 79] },

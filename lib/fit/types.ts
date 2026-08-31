@@ -24,6 +24,16 @@ export interface BodyMeasurements {
   hipCm?: number;
 }
 
+/**
+ * Who a size chart is published for.
+ *
+ * Deliberately separate from `GarmentCategory`. Category is *what a garment is*
+ * (`top`, `dress`, …); audience is *who the chart sizes*. Both charts here
+ * contain tops, so category cannot select between them — the two are different
+ * axes and conflating them was a real bug in the issue that asked for this.
+ */
+export type ChartAudience = "womens" | "mens";
+
 /** One row of a brand size chart, as inclusive body-measurement ranges. */
 export interface SizeChartEntry {
   size: string;
@@ -36,6 +46,11 @@ export interface SizeChart {
   id: string;
   /** Brand or standard this chart came from. Shown to the shopper for trust. */
   source: string;
+  /**
+   * Who the chart sizes. Taken from the retailer's own page, not inferred —
+   * the same standard as `verified`.
+   */
+  audience: ChartAudience;
   /** Ordered smallest to largest. Order matters: adjacency drives "size up/down". */
   entries: SizeChartEntry[];
   /**
