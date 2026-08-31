@@ -166,9 +166,40 @@ measure, a physical device or people. See `docs/agents/issue-tracker.md` for the
    see §5f. `lib/tryon/replicate.ts` was deliberately *not* in that issue: it goes when a real provider
    lands, which makes it downstream of G1–G3 rather than unblocked work.
 10. **Mobile layout** — #13. Still inspection-only; needs a real device before the demo.
-11. **Fit polish** — #15, garment-category awareness in size chart selection.
+11. ~~**Fit polish** — #15.~~ **Done.** Size charts now declare an `audience`, and an impossible
+    garment/chart pairing suppresses the size instead of returning a confident one — see §5h. Selecting
+    a chart *from* the garment is deliberately not built: it needs an audience on `Garment`, which is a
+    product decision about whether the catalogue models gendered garments. **Open question for you.**
 
 **Do not start** the Vertex provider until G1–G3 are green. That is the whole point of the gate.
+
+## 5h. Size charts have an audience, and impossible pairings suppress the size (#15)
+
+`SizeChart` now carries `audience: "womens" | "mens"`, taken from each retailer's own page — the same
+standard as `verified`, not inferred. The picker shows it, so "Women's — Boden UK…" rather than a brand
+name that does not say who it sizes.
+
+**The bug this fixes was live:** a shopper could select the Rust Midi Dress against Seasalt menswear and
+get a confident **M at 85%**. Nothing connected the garment to the chart.
+
+**Suppressed, not captioned.** On an impossible pairing the size is withheld and the reason shown in its
+place, following the rule already applied to `unreliable` measurements: a number known to be meaningless
+must not reach the shopper, while the explanation still does.
+
+**The guard is deliberately narrow** — only `dress` against a menswear chart, which is an absence in the
+source rather than a judgement. Both charts carry tops, so a `top` says nothing about which chart applies,
+and guessing would be worse than silence. Same reasoning that removed the hip estimate rather than
+retuning it. Verified in a browser that a top on the menswear chart still returns M at 85%; over-blocking
+would be the more damaging failure.
+
+`lib/chartMatch.ts` sits at the lib root, not in `lib/fit/`, because the fit engine does not import the
+garment catalogue and keeping it that way is what lets a recommendation run with no product context.
+
+**Not built, and it needs your decision:** selecting the chart *from* the garment requires `audience` on
+`Garment`. The catalogue art is audience-neutral, and asserting the oatmeal tee is womenswear is a claim
+about the product, not a refactor.
+
+---
 
 ## 5g. The demo makes no external request (G9, #12)
 
