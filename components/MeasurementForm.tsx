@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { estimateFromImageSource } from "@/lib/pose/estimator";
+import { measureFromClient } from "@/lib/measure/client";
+import { measurementNotes, toBodyMeasurements } from "@/lib/measure/types";
 import { SIZE_CHARTS } from "@/lib/fit/sizeCharts";
 import type { BodyMeasurements, FitPreference, MeasurementSource } from "@/lib/fit/types";
 
@@ -12,6 +13,8 @@ interface Props {
   sizeChartId: string;
   /** Photo already captured in step A, reused here without re-uploading. */
   photoDataUrl: string | null;
+  /** Which measurement provider is configured. Resolved on the server. */
+  measurementProvider: string;
   onHeightChange: (heightCm: number | null) => void;
   onMeasurementsChange: (
     measurements: BodyMeasurements,
@@ -35,6 +38,7 @@ export default function MeasurementForm({
   fitPreference,
   sizeChartId,
   photoDataUrl,
+  measurementProvider,
   onHeightChange,
   onMeasurementsChange,
   onFitPreferenceChange,
@@ -48,18 +52,28 @@ export default function MeasurementForm({
     setEstimating(true);
     setEstimateNote(null);
     try {
-      const estimate = await estimateFromImageSource(photoDataUrl, heightCm);
-      if (!estimate.ok) {
-        setEstimateNote(estimate.message ?? "Could not estimate from this photo.");
+      const result = await measureFromClient(
+        { heightCm, frontImage: photoDataUrl },
+        measurementProvider,
+      );
+      if (!result.ok) {
+        setEstimateNote(result.message ?? "Could not estimate from this photo.");
         return;
       }
       // Merge rather than replace: a waist the shopper typed is better data than
       // anything we could infer, and we never estimate waist anyway.
+      //
+      // `toBodyMeasurements` drops values the provider flagged unreliable, so a
+      // figure we have evidence is wrong cannot quietly move a size. The note
+      // still surfaces below, so it is disclosed rather than hidden.
       onMeasurementsChange(
-        { ...measurements, ...estimate.measurements },
+        { ...measurements, ...toBodyMeasurements(result) },
         "estimated_from_photo",
       );
-      setEstimateNote("Estimated from your photo. Adjust anything that looks off.");
+      const notes = measurementNotes(result);
+      setEstimateNote(
+        ["Estimated from your photo. Adjust anything that looks off.", ...notes].join(" "),
+      );
     } catch (cause) {
       setEstimateNote(
         cause instanceof Error ? cause.message : "Pose estimation is unavailable.",

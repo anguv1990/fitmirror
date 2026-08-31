@@ -6,6 +6,7 @@ import ConsentGate from "@/components/ConsentGate";
 import GarmentPicker from "@/components/GarmentPicker";
 import MeasurementForm from "@/components/MeasurementForm";
 import PhotoSource, { type CapturedPhoto } from "@/components/PhotoSource";
+import SizeComparison from "@/components/SizeComparison";
 import SizeRecommendation from "@/components/SizeRecommendation";
 import TryOnResult from "@/components/TryOnResult";
 import type { ProcessingDisclosure } from "@/lib/compliance/disclosure";
@@ -28,9 +29,20 @@ interface Props {
    * something we cannot describe.
    */
   disclosure: ProcessingDisclosure | null;
+  /**
+   * The measurement path's facts. Separate from `disclosure` because the two
+   * halves can now give different answers: measuring may run in the browser
+   * while rendering always transmits.
+   */
+  measurementDisclosure: ProcessingDisclosure | null;
+  measurementProvider: string;
 }
 
-export default function Studio({ disclosure }: Props) {
+export default function Studio({
+  disclosure,
+  measurementDisclosure,
+  measurementProvider,
+}: Props) {
   const [photo, setPhoto] = useState<CapturedPhoto | null>(null);
   const [garment, setGarment] = useState<Garment | null>(null);
 
@@ -211,6 +223,7 @@ export default function Studio({ disclosure }: Props) {
             <div className="space-y-3">
               <ConsentGate
                 disclosure={disclosure}
+                measurementDisclosure={measurementDisclosure}
                 granted={consented}
                 onGrant={() => setConsented(true)}
                 onWithdraw={handleWithdraw}
@@ -232,6 +245,7 @@ export default function Studio({ disclosure }: Props) {
               fitPreference={fitPreference}
               sizeChartId={sizeChartId}
               photoDataUrl={photo?.dataUrl ?? null}
+              measurementProvider={measurementProvider}
               onHeightChange={setHeightCm}
               onMeasurementsChange={handleMeasurements}
               onFitPreferenceChange={setFitPreference}
@@ -257,6 +271,15 @@ export default function Studio({ disclosure }: Props) {
               error={fitError}
               stale={fitStale}
             />
+            {fitStatus === "done" && (
+              <div className="mt-3">
+                <SizeComparison
+                  recommendation={fit}
+                  sizeChartId={sizeChartId}
+                  stale={fitStale}
+                />
+              </div>
+            )}
           </section>
 
           <Panel piece="E" title="The mirror" tone="mat">

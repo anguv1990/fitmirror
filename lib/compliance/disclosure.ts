@@ -41,19 +41,67 @@ export interface ProcessingDisclosure {
 }
 
 /**
- * The measurement path, which is not a provider and never will be: MediaPipe
- * Pose runs in the browser, so the photo is never transmitted. Only the derived
- * numbers are, and only on submit.
+ * One entry per measurement provider (`lib/measure/index.ts`).
+ *
+ * The measurement path used to be a single hard-coded fact, because it could
+ * only ever run in the browser. Once a vendor scanner can sit behind the same
+ * seam that stopped being true, and a sentence promising the photo never leaves
+ * the device became something that depends on configuration.
  */
-export const MEASUREMENT_DISCLOSURE: ProcessingDisclosure = {
-  provider: "client",
-  engine: "MediaPipe Pose, in your browser",
-  photoLeavesDevice: false,
-  processor: null,
-  processingRegion: "Your own device",
-  photoRetained: false,
-  aiGenerated: false,
+const MEASUREMENT_DISCLOSURES: Record<string, ProcessingDisclosure> = {
+  local: {
+    provider: "local",
+    engine: "MediaPipe Pose, in your browser",
+    photoLeavesDevice: false,
+    processor: null,
+    processingRegion: "Your own device",
+    photoRetained: false,
+    aiGenerated: false,
+  },
+  "3dlook": {
+    provider: "3dlook",
+    engine: "3DLOOK Mobile Tailor",
+    photoLeavesDevice: true,
+    processor: "3DLOOK, Inc. (3dlook.ai)",
+    // Unconfirmed — gate G12. 3DLOOK publishes no data residency, so no UK or EU
+    // claim may be made. Same shape as G1 for Vertex.
+    processingRegion: null,
+    // They state images are blurred, used only to produce the scan, and deleted
+    // immediately. Recorded as their claim; gate G13 is the signed DPA.
+    photoRetained: false,
+    aiGenerated: false,
+  },
 };
+
+/**
+ * The measurement path's facts. Throws for an unregistered provider, for the
+ * same reason as the try-on side: consent cannot be asked for processing that
+ * nobody has described.
+ */
+export function getMeasurementDisclosure(provider: string): ProcessingDisclosure {
+  const disclosure = MEASUREMENT_DISCLOSURES[provider];
+  if (!disclosure) {
+    throw new Error(
+      `No processing disclosure for measurement provider "${provider}". ` +
+        `Add one to lib/compliance/disclosure.ts before shipping it.`,
+    );
+  }
+  return disclosure;
+}
+
+/** Measurement providers with a disclosure on file. */
+export function knownMeasurementProviders(): string[] {
+  return Object.keys(MEASUREMENT_DISCLOSURES);
+}
+
+/**
+ * The local, in-browser measurement path.
+ *
+ * Kept as a named export because it is the one disclosure that is true by
+ * construction rather than by configuration.
+ */
+export const MEASUREMENT_DISCLOSURE: ProcessingDisclosure =
+  MEASUREMENT_DISCLOSURES.local;
 
 /**
  * One entry per try-on provider. Keys must match `lib/tryon/index.ts`.
@@ -109,7 +157,15 @@ export function knownProviders(): string[] {
  * Kept short and specific. "I agree to the terms" is not consent to process a
  * body photo (§2), so each statement names one concrete thing that will happen.
  */
-export function consentStatements(disclosure: ProcessingDisclosure): string[] {
+export function consentStatements(
+  disclosure: ProcessingDisclosure,
+  /**
+   * The measurement path, when it differs from the render path. Once a vendor
+   * scanner can sit behind the measurement seam, "your photo stays on your
+   * device" stops being true of both halves, and consent has to say so.
+   */
+  measurement?: ProcessingDisclosure,
+): string[] {
   const statements: string[] = [];
 
   statements.push(
@@ -117,6 +173,14 @@ export function consentStatements(disclosure: ProcessingDisclosure): string[] {
       ? "Your photo is sent to our server to render the garment on it."
       : "Your photo stays on your device.",
   );
+
+  if (measurement) {
+    statements.push(
+      measurement.photoLeavesDevice
+        ? `To measure you, it is also sent to ${measurement.processor ?? "our server"}.`
+        : "Measuring you happens entirely on your device — that part of your photo never goes anywhere.",
+    );
+  }
 
   if (disclosure.processor) {
     statements.push(

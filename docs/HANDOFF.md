@@ -106,7 +106,7 @@ Full detail in `04-prerequisite-gate.md`.
 | G5 | Source a real brand **size chart** with body measurements | ✅ **Cleared** — Boden (women's) + Seasalt (men's) | Done |
 | G6 | Decide: does the live demo allow **audience uploads**? | Open | You |
 | G7 | Vertex model access + least-privilege service account | Not started | You (after G1–G3) |
-| G8 | **Bias calibration against real photos** | Open — see §6 | Either |
+| G8 | **Bias calibration against real photos** | 🟡 In progress — see §5c | Either |
 | G9 | Pre-generate demo renders so the demo runs offline | Not started | Either |
 | G10 | Consent copy, AI-generated label, privacy one-pager | ✅ **Cleared** — see §5b | Done |
 
@@ -211,6 +211,61 @@ All five came from real data or real browsers, not unit tests:
 because the in-range branch was fixed and the out-of-range branch was missed. Real charts have gaps and
 open-ended bands that invented ones do not.
 
+## 5d. The measurement seam (2026-08-31)
+
+`lib/measure/` now mirrors `lib/tryon/`. `MEASUREMENT_PROVIDER` selects the provider; default `local`.
+
+- `local` — MediaPipe in the browser. Free, offline, **photo never leaves the device**.
+- `3dlook` — registered, disclosed, and **deliberately non-functional**. Its request mapping is unverified
+  because Mobile Tailor's API reference sits behind an Enterprise agreement (gate G11), and guessing field
+  names would mis-assign measurements silently. It throws rather than guessing.
+
+**Verified by running with `MEASUREMENT_PROVIDER=3dlook`:** the consent copy gained "To measure you, it is
+also sent to 3DLOOK, Inc. (3dlook.ai)", `/privacy` switched the measurement card to 3DLOOK and kept the
+region unconfirmed (G12), and the local-only reassurance disappeared. No copy was hand-edited.
+
+**The routing rule that matters:** `runsOn: "browser"` and "the photo stays on the device" are the same
+statement. `lib/measure/client.ts` routes on exactly that — `local` runs in the browser, anything else goes
+to `POST /api/measure`. Keeping one rule behind both the behaviour and the privacy claim is what stops them
+drifting.
+
+**Hip is now marked `unreliable`** and excluded from the size recommendation by `toBodyMeasurements()`,
+while its explanation still reaches the shopper. Verified in-browser: a real photo produced chest 100.3cm,
+an empty hip field, both caveats visible, and UK 16 at 64% confidence — lower than the 81% from typed
+measurements, because the fit engine correctly discounts partial data. **This was my call, not yours** — it
+is one line to reverse via `includeUnreliable`, and the alternative was feeding a number we have evidence
+is ~30cm wrong into a size recommendation.
+
+---
+
+## 5c. Pose calibration, first real run (G8, 2026-08-30)
+
+Harness at **`/dev/calibrate`**; statistics in `lib/pose/calibration.ts`. Browser-only, photos never
+uploaded, export is numbers-only so findings outlive the images.
+
+**The headline: the first six real photos found two defects in a path that 13 tests had been passing.**
+
+1. **Back views were accepted** and returned a confident chest measurement. The rotation gate compares
+   shoulder *depth*, which cannot tell "square-on facing you" from "square-on facing away". Fixed with a
+   `facing_away` gate on left/right x ordering, verified against real MediaPipe output.
+2. **The synthetic fixture was mirrored** — it placed the subject's left shoulder at the lower x, so every
+   pose test had been running against a back-to-front body. That is why defect 1 survived.
+
+**Still open, and do not paper over it:** hip estimates came out at **72.1cm and 66.7cm** against chests
+near 100cm, which is not a plausible adult. The cause is structural rather than calibration —
+`HIP_WIDTH_TO_CIRCUMFERENCE = 3.1` is applied to MediaPipe's hip **joint centres** (~23cm apart), not the
+outer hip breadth (~35cm). Shoulder breadth resolves to ~40.9cm, so the scale itself is fine. Decide
+whether to use different landmarks or stop emitting `hipCm` from photos, as waist already does. **Do not
+just raise the constant to 4.3** — that fits the symptom.
+
+**Not yet possible:** the actual error. That needs a confirmed height (175cm was assumed) and tape
+measurements. `MIN_SUBJECTS_FOR_MULTIPLIER_CHANGE = 8` deliberately blocks any multiplier change until
+there are 8 distinct **people** — six photos of one person is one observation repeated six times, and the
+documented bias varies by sex, so a single-subject sample cannot detect it even in principle.
+
+**Calibration photos live in `assets/`, gitignored.** They are personal data. They stay on the machine that
+captured them.
+
 ---
 
 ## 6. Document map
@@ -224,6 +279,8 @@ open-ended bands that invented ones do not.
 | `04-prerequisite-gate.md` | The checklist that must be green before coding |
 | `05-privacy-notice.md` | Consent copy, AI labelling, the privacy notice, and why they are generated |
 | `06-build-playbook.md` | **Start here if you have lost the thread.** Phases, goals, paste-ready prompts, which skills and agents to use, cost control, memory scopes |
+| `07-body-measurement-buy-vs-build.md` | 3DLOOK / Mobile Tailor evaluation, SMPL licensing trap, the `MeasurementProvider` seam, gates G11–G15 |
+| `08-vton-2026-and-next.md` | **Strategy update.** Google shipped free try-on into UK Search; fit-aware VTON is the 2026 frontier |
 | `../ONBOARDING.md` | Team onboarding guide (repo root). Untracked — see §8. |
 
 ---
