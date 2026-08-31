@@ -20,11 +20,10 @@ import type {
  * from population-average ratios rather than measured. Two consequences are
  * reported honestly rather than hidden:
  *
- * - **Hip is marked `unreliable`.** Calibration against real photos (gate G8)
- *   produced hips of 72.1cm and 66.7cm against chests near 100cm. The cause is
- *   structural: `HIP_WIDTH_TO_CIRCUMFERENCE` is applied to MediaPipe's hip
- *   *joint centres* (~23cm apart), not the outer hip breadth (~35cm).
- *   `docs/04-prerequisite-gate.md` G8.
+ * - **Only chest is returned.** Waist and hip are not estimated, because no pose
+ *   landmark supports either. Hip was removed after gate-G8 calibration showed
+ *   72.1cm and 66.7cm against chests near 100cm — the multiplier was being
+ *   applied to MediaPipe's hip *joint centres* rather than the outer hip.
  * - **A side photo is accepted but not yet used.** Extracting depth needs a
  *   silhouette, which means image segmentation — pose landmarks are joint
  *   positions, not an outline. Recorded as the next real accuracy win.
@@ -56,18 +55,9 @@ class LocalMeasurementProvider implements MeasurementProvider {
       );
     }
 
-    if (typeof estimate.measurements.hipCm === "number") {
-      values.hipCm = {
-        valueCm: estimate.measurements.hipCm,
-        confidence: "unreliable",
-        note:
-          "Hip is derived from pose joint centres rather than the widest point, " +
-          "and reads far too small. Excluded from the size recommendation — enter it yourself for a better result.",
-      };
-    }
-
-    // waistCm is deliberately absent: no landmark supports it, and individual
-    // variation at a given frame size is far too wide to interpolate honestly.
+    // waistCm and hipCm are deliberately absent: no landmark supports either.
+    // Hip used to be reported and was ~30cm low, because the multiplier was
+    // applied to MediaPipe's hip *joint centres* rather than the outer hip.
 
     return {
       ...base,

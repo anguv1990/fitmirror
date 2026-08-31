@@ -97,16 +97,32 @@ Two defects surfaced immediately, from a path that had until then only ever seen
 - [x] **Fixed — the synthetic test fixture was mirrored.** It placed the subject's left shoulder at the
       lower x, i.e. it described someone facing away. Every pose test had been passing against a
       back-to-front body. This is why the defect above survived 13 tests.
-- [ ] **Open — hip estimates are far too small, and the cause is structural, not calibration.**
+- [x] **Fixed — hip estimation removed rather than retuned.**
+      Landmarks 23/24 are the hip **joint positions** (MediaPipe's world origin sits between them), not the
+      outer hip. Hip circumference is taken at the widest point over the buttocks — soft tissue no pose
+      landmark locates. This is the same reason waist was never estimated; the rule was right and hip was
+      the case that got missed.
+      Scaling the constant from 3.1 to ~4.3 would have made the output look correct while still measuring
+      the wrong thing, and with no tape measurements it would have been fitting the symptom to an
+      assumption. Recovering hip needs a body outline, i.e. **image segmentation, not pose landmarks** —
+      recorded below as the route back.
+      A shopper can still type a hip; only the photo estimate is gone. `CALIBRATED_KEYS` keeps `hipCm` so
+      the harness can validate a segmentation-based estimate when one exists.
+
+- [ ] **Superseded — original finding, kept for the reasoning.**
       Both accepted photos gave hips of **72.1cm and 66.7cm** against chests near 100cm. An adult hip
       circumference is normally at or above the chest.
       Working back: shoulder breadth resolves to ~40.9cm, which is right for an adult, so the *scale* is
       sound. The hip landmarks resolve to ~23.3cm apart — MediaPipe's landmarks 23/24 sit at the **hip
       joint centres**, not the outer hip breadth (~35cm). `HIP_WIDTH_TO_CIRCUMFERENCE = 3.1` is being
       applied to the wrong anatomical distance, and would need to be ≈4.3 to land near a real hip.
-      **Do not simply retune it** — decide first whether to derive hip width from a different landmark
-      pair, or stop emitting `hipCm` from photos the way waist already is.
-      Note `66.7` cleared the plausibility floor of 60cm, so that guard did not catch it either.
+      Note `66.7` cleared the plausibility floor of 60cm, so that guard did not catch it either — a
+      plausibility range catches broken poses, not a measurement of the wrong thing.
+
+- [ ] **Route back for hip:** MediaPipe Image Segmenter gives a body silhouette, from which width at hip
+      height is measurable. Combined with a side photo it would give depth too, and an ellipse
+      approximation rather than a population multiplier. That is a real piece of work, not a constant
+      change, and it would also improve chest.
 - [ ] Obtain tape measurements + confirmed height to quantify the chest error
 - [ ] Widen the sample: **8 distinct people minimum** before any multiplier changes
       (`MIN_SUBJECTS_FOR_MULTIPLIER_CHANGE`). Six photos of one person is one observation repeated.
@@ -115,6 +131,28 @@ Two defects surfaced immediately, from a path that had until then only ever seen
 **Chest estimates were internally consistent** across the three accepted photos (100.3 / 99.8 / 103.2cm),
 which is evidence of repeatability but says nothing about accuracy until there is a tape measurement to
 compare against. All figures scale linearly with declared height, which is currently a guess.
+
+### G16 · Garment photography — **blocks every hosted renderer**
+
+The seam is built (`Garment.image`, `lib/garmentImage.ts`); the images are not sourced.
+
+- [ ] Source a **photograph of each garment laid flat** — the format every hosted try-on model expects
+- [ ] Record a **licence per image** in `Garment.image.licence`. **Retailer product photography is
+      copyrighted; scraping it is not an option available here.** Own photography, licensed stock, or
+      AI-generated garment images with usable terms.
+- [ ] Set `PUBLIC_ORIGIN` if images are served from `public/` — a hosted model cannot fetch `localhost`
+
+**Why this is a gate and not a task.** `Garment.art` is vector artwork for the picker and the mock, and the
+mock hides the gap by compositing it directly. A hosted model handed that artwork **does not fail — it
+returns a confident, useless render and charges for it.** `requireGarmentPhotograph` therefore throws
+*before* the request rather than letting the problem surface in the output.
+
+This is a rights problem, not a code problem. Note it sits alongside G4, which covers *model* images; this
+covers *garment* images, and clearing one does not clear the other.
+
+**Try-off is the scalable answer later.** Reconstructing a canonical flat garment from a worn photo
+(`08-vton-2026-and-next.md` §2) is how a retailer turns existing catalogue imagery into try-on-ready assets
+without a reshoot.
 
 ### G9 · Demo resilience
 - [ ] Pre-generate every render on the scripted happy path (`02-architecture.md` §5, layer 2)
@@ -152,6 +190,7 @@ no lawyer/DPO review. See `05-privacy-notice.md` §6.
 | G5 Size chart | P1 | ✅ Cleared |
 | G7 Vertex access | P1 | ⬜ Not started |
 | G8 Bias check | P2 | 🟡 In progress — 2 defects fixed, hip issue open |
+| G16 Garment photography | P1 | 🟡 Seam built, images not sourced |
 | G9 Demo resilience | P2 | ⬜ Not started |
 | G10 Compliance artefacts | P2 | ✅ Cleared |
 

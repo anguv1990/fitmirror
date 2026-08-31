@@ -23,32 +23,57 @@ import type { BodyMeasurements } from "../fit/types";
  * without a known reference. Declared height is that reference. Any design that
  * promises measurements from a bare photo is wrong (docs/01-landscape.md §4).
  *
- * ## Why waist is deliberately not estimated
+ * ## Why waist and hip are deliberately not estimated
  *
- * There is no waist landmark, and waist circumference has the widest individual
- * variation of the three measurements at a given frame size — two people with
- * identical shoulders and hips can differ by 25cm at the waist. Interpolating one
- * would produce a confident-looking number with no support in the data. Omitting
- * it is more honest, and the fit engine already handles partial measurements by
- * lowering confidence.
+ * **Waist:** there is no waist landmark, and waist circumference has the widest
+ * individual variation of the three measurements at a given frame size — two
+ * people with identical shoulders and hips can differ by 25cm at the waist.
+ *
+ * **Hip:** landmarks 23 and 24 are the *hip joint positions* — MediaPipe's
+ * world-coordinate origin sits between them — not the outer hip contour. Hip
+ * circumference is measured at the widest point over the buttocks, which is soft
+ * tissue that no pose landmark locates.
+ *
+ * Hip estimation shipped anyway, applying a width-to-circumference ratio to the
+ * joint-centre distance as if it were a body breadth. Gate G8 calibration caught
+ * it: real photos gave 72.1cm and 66.7cm against chests near 100cm, from a
+ * joint-centre distance of ~23.3cm where the outer hip is nearer 35cm. The
+ * shoulder figure resolved to ~40.9cm and was correct, so the scale was never
+ * the problem — the landmark was.
+ *
+ * **It was removed rather than retuned.** Scaling the constant from 3.1 to ~4.3
+ * makes the output look right while still measuring the wrong thing, and there
+ * is no tape measurement to calibrate against — it would be fitting the symptom
+ * to an assumption. Recovering hip needs a body outline, which means image
+ * segmentation, not pose landmarks.
+ *
+ * Omitting both is more honest, and the fit engine already handles partial
+ * measurements by lowering confidence. A shopper can still type either.
  */
 
 /** Eye height as a fraction of stature (standard anthropometric approximation). */
 const EYE_HEIGHT_FRACTION = 0.936;
 
 /**
- * Width-to-circumference multipliers, calibrated against adult population
- * averages. These are the crudest part of the model and the first thing to
- * revisit with real calibration data.
+ * Width-to-circumference multiplier, a population average and the crudest part
+ * of the model. Still uncalibrated: gate G8 has no tape measurements yet, and
+ * `lib/pose/calibration.ts` refuses to move it below 8 distinct subjects.
+ *
+ * There is no hip equivalent any more — see the note above.
  */
 const SHOULDER_TO_CHEST_CIRCUMFERENCE = 2.45;
-const HIP_WIDTH_TO_CIRCUMFERENCE = 3.1;
 
 /** Minimum MediaPipe visibility for a landmark to be trusted. */
 const MIN_VISIBILITY = 0.5;
 
-/** Outputs outside these bounds indicate a bad pose rather than an unusual body. */
-const PLAUSIBLE = { chestCm: [60, 160], hipCm: [60, 170] } as const;
+/**
+ * Outputs outside these bounds indicate a bad pose rather than an unusual body.
+ *
+ * Worth remembering why this is a weak guard: the removed hip estimate produced
+ * 66.7cm, which cleared its floor of 60cm comfortably. A plausibility range
+ * catches broken poses, not a measurement of the wrong thing.
+ */
+const PLAUSIBLE = { chestCm: [60, 160] } as const;
 
 /**
  * Maximum left/right depth difference before the subject is treated as turned.
@@ -171,20 +196,13 @@ export function estimateMeasurements({
     imageWidth,
     imageHeight,
   );
-  const hipPx = distancePx(
-    landmarks[POSE.LEFT_HIP],
-    landmarks[POSE.RIGHT_HIP],
-    imageWidth,
-    imageHeight,
-  );
-
   const chestCm = round1(shoulderPx * cmPerPixel * SHOULDER_TO_CHEST_CIRCUMFERENCE);
-  const hipCm = round1(hipPx * cmPerPixel * HIP_WIDTH_TO_CIRCUMFERENCE);
 
   const measurements: BodyMeasurements = {};
   if (inRange(chestCm, PLAUSIBLE.chestCm)) measurements.chestCm = chestCm;
-  if (inRange(hipCm, PLAUSIBLE.hipCm)) measurements.hipCm = hipCm;
-  // waistCm intentionally omitted — see the note at the top of this file.
+  // waistCm and hipCm are intentionally omitted — no landmark supports either.
+  // See the note at the top of this file. The hip landmarks are still required
+  // above, as a check that the pose is a full body rather than a crop.
 
   if (Object.keys(measurements).length === 0) {
     return {

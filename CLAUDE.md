@@ -55,6 +55,18 @@ label, and `/privacy` all render **from** those records.
 - `app/page.tsx` and `app/privacy/page.tsx` are `force-dynamic`. Prerendering baked in the build machine's
   provider, so a deploy could show consent copy describing a provider that was not running.
 
+### Garment images vs garment art
+
+`Garment.art` is inline SVG for the picker thumbnail and the mock. **It is not a garment photograph**, and
+every hosted try-on model needs one (`Garment.image`, `lib/garmentImage.ts`, gate G16).
+
+`requireGarmentPhotograph` throws *before* a request is made, and `kind` is recorded rather than inferred
+from the file extension. The reason is specific: a hosted model handed vector artwork does not error — it
+returns a confident, useless render and bills for it. No garment in the catalogue has a photograph yet, and
+a test asserts that, so the render path fails loudly rather than expensively.
+
+Retailer product photography is copyrighted. Sourcing is a rights problem, not a code one.
+
 ### Two processing paths — do not conflate them
 
 | | Photo leaves device |
@@ -100,7 +112,11 @@ wide or open-ended band beat a much nearer narrow one. Keep the decay absolute.
   retailer's own "how to measure" wording.
 - **Real charts have gaps and open-ended bands.** Seasalt jumps 94→96cm at S/M. `outOfChartRange` tests the
   chart's overall span, not band membership.
-- **Waist is never estimated from a photo.** No landmark supports it.
+- **Waist and hip are never estimated from a photo.** No landmark supports either. Hip looks like it should
+  work — landmarks 23/24 are right there — but they are the hip *joint positions*, not the outer hip, and
+  circumference is taken at the widest point over the buttocks. Estimating it shipped once and read ~30cm
+  low; it was removed rather than retuned, because a bigger multiplier still measures the wrong thing.
+  Recovering it needs image segmentation, not pose landmarks.
 - **Verify UI changes in a real browser** (`claude-in-chrome`). Every real bug in this repo came from real
   data or a real browser; none came from unit tests.
 - **Never commit anything under `assets/`** — real photos of people, gitignored, calibration input only.

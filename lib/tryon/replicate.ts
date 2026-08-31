@@ -1,3 +1,4 @@
+import { requireGarmentPhotograph } from "../garmentImage";
 import type { Garment, TryOnRequest, TryOnResult } from "../types";
 import { ProviderConfigError, type TryOnProvider } from "./types";
 
@@ -5,12 +6,14 @@ import { ProviderConfigError, type TryOnProvider } from "./types";
  * Real inference via Replicate (IDM-VTON or any model with a compatible
  * signature). Enable with TRYON_PROVIDER=replicate and a REPLICATE_API_TOKEN.
  *
- * Two things must be sorted before this is production-ready, and neither is
- * done here:
+ * Still not production-ready, for two reasons:
  *
- *  1. `garment.art` is inline SVG, but hosted try-on models expect a photograph
- *     of a real garment laid flat. The catalog needs real product images, and
- *     `Garment` needs a field holding a publicly reachable URL for each.
+ *  1. **No garment in the catalogue has a photograph yet** (gate G16), so this
+ *     throws on the first call. That is the seam working as intended — the
+ *     alternative is paying for a render of vector artwork. `Garment.image`
+ *     and `requireGarmentPhotograph` are the plumbing; sourcing licensed
+ *     photography is the remaining work, and it is a rights problem rather
+ *     than a code one.
  *  2. Replicate predictions are async and can outlast a serverless request. This
  *     polls inline for simplicity, which is fine locally but should become a
  *     webhook plus a job record before it sees real traffic.
@@ -30,6 +33,12 @@ class ReplicateTryOnProvider implements TryOnProvider {
       );
     }
 
+    // Resolved before the request, not after: a hosted model handed vector
+    // artwork returns a confident, useless render and bills for it.
+    const garmentUrl = requireGarmentPhotograph(garment, {
+      origin: process.env.PUBLIC_ORIGIN,
+    });
+
     const started = Date.now();
     const version = process.env.REPLICATE_TRYON_VERSION || DEFAULT_VERSION;
 
@@ -43,8 +52,7 @@ class ReplicateTryOnProvider implements TryOnProvider {
         version,
         input: {
           human_img: request.personImage,
-          // See caveat (1) above: this needs to be a real garment photo URL.
-          garm_img: garmentImageUrl(garment),
+          garm_img: garmentUrl,
           garment_des: garment.name,
         },
       }),
@@ -97,14 +105,6 @@ class ReplicateTryOnProvider implements TryOnProvider {
       aiGenerated: true,
     };
   }
-}
-
-function garmentImageUrl(garment: Garment): string {
-  throw new ProviderConfigError(
-    `Garment "${garment.id}" has no hosted product image. The Replicate provider ` +
-      "needs a public URL for the garment; add an `imageUrl` field to the catalog " +
-      "in lib/garments.ts and return it here.",
-  );
 }
 
 export const replicateProvider = new ReplicateTryOnProvider();

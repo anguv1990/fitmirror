@@ -1,6 +1,33 @@
 export type GarmentCategory = "top" | "outerwear" | "dress" | "bottom";
 
 /**
+ * What a garment image actually is.
+ *
+ * Hosted try-on models are trained on **photographs of real garments laid
+ * flat**. Feeding one vector artwork does not fail — it returns a confident,
+ * useless render, having charged for it. So the kind is recorded rather than
+ * assumed, and providers that need photography check it.
+ */
+export type GarmentImageKind = "photograph" | "illustration";
+
+/**
+ * A real image of the garment, as distinct from the `art` used for the picker
+ * thumbnail and the offline mock.
+ */
+export interface GarmentImage {
+  /** Absolute URL, or a site-relative path served from `public/`. */
+  url: string;
+  kind: GarmentImageKind;
+  /**
+   * Provenance and licence. Required, and it mirrors `SizeChart.verified`: the
+   * point is that nothing whose rights are unclear can ship without someone
+   * having written down what they are. Retailer product photography is
+   * copyrighted — scraping it is not a shortcut available here.
+   */
+  licence: string;
+}
+
+/**
  * A garment in the catalog.
  *
  * `art` is inline SVG markup drawn in a 0 0 100 140 coordinate space. It is the
@@ -20,6 +47,12 @@ export interface Garment {
    * width and height. Origin is the top-left of the photo.
    */
   fit: { x: number; y: number; width: number; height: number };
+  /**
+   * The real garment image every hosted try-on model needs. Absent today for
+   * every garment in the catalogue — see gate G16. `art` cannot substitute:
+   * it is vector artwork authored for compositing, not a photograph.
+   */
+  image?: GarmentImage;
 }
 
 export interface TryOnRequest {

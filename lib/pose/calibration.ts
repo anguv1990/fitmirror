@@ -17,7 +17,15 @@
 
 import type { BodyMeasurements } from "../fit/types";
 
-/** The measurements the photo path actually estimates. Waist is never estimated. */
+/**
+ * Measurements this harness can calibrate.
+ *
+ * `hipCm` is retained deliberately even though the photo path no longer produces
+ * one: hip was removed because pose landmarks give joint centres rather than the
+ * outer hip, and recovering it needs image segmentation. When that lands, this
+ * is what validates it. Until then the harness reports `no-data` for hip, which
+ * is the accurate answer rather than a gap.
+ */
 export type CalibratedKey = "chestCm" | "hipCm";
 
 export const CALIBRATED_KEYS: readonly CalibratedKey[] = ["chestCm", "hipCm"];

@@ -74,8 +74,20 @@ describe("estimateMeasurements", () => {
     expect(result.ok).toBe(true);
     expect(result.measurements.chestCm).toBeGreaterThan(70);
     expect(result.measurements.chestCm).toBeLessThan(130);
-    expect(result.measurements.hipCm).toBeGreaterThan(70);
-    expect(result.measurements.hipCm).toBeLessThan(130);
+  });
+
+  it("never estimates a hip measurement", () => {
+    // Landmarks 23/24 are the hip *joint positions* — MediaPipe's world origin
+    // sits between them — not the outer hip. Hip circumference is taken at the
+    // widest point over the buttocks, which is soft tissue no landmark locates.
+    //
+    // Regression, gate G8: this shipped, applying a width-to-circumference ratio
+    // to the joint-centre distance as if it were a body breadth. Real photos
+    // gave 72.1cm and 66.7cm against chests near 100cm. Removed rather than
+    // retuned — scaling 3.1 to ~4.3 makes the number look right while still
+    // measuring the wrong thing.
+    const result = estimateMeasurements({ landmarks: pose(), ...base });
+    expect(result.measurements.hipCm).toBeUndefined();
   });
 
   it("never estimates a waist measurement", () => {
@@ -202,16 +214,16 @@ describe("estimateMeasurements", () => {
       expect(result.issues).toContain("implausible_result");
     });
 
-    it("returns the plausible subset when only one measurement is bad", () => {
-      // Implausible shoulders but a normal hip span: report the hip rather than
-      // discarding a usable measurement. The fit engine handles partial input.
+    it("reports nothing usable when the only measurement is implausible", () => {
+      // Chest is now the sole output, so an implausible shoulder span leaves
+      // nothing to return. Saying so beats returning an empty success.
       const result = estimateMeasurements({
         landmarks: pose({ shoulderSpan: 0.95 }),
         ...base,
       });
-      expect(result.ok).toBe(true);
+      expect(result.ok).toBe(false);
+      expect(result.issues).toContain("implausible_result");
       expect(result.measurements.chestCm).toBeUndefined();
-      expect(result.measurements.hipCm).toBeDefined();
     });
   });
 });
