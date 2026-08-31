@@ -140,9 +140,14 @@ deliberately.
 
 ---
 
-## 6. Recommended architecture: a second seam
+## 6. The second seam — **built 2026-08-31**
 
-Do not replace the local estimator. Put a seam in front of it, exactly as `TryOnProvider` did for rendering.
+Not a replacement for the local estimator: a seam in front of it, exactly as `TryOnProvider` did for
+rendering. `lib/measure/`, selected by `MEASUREMENT_PROVIDER`, default `local`.
+
+Verified by running with `MEASUREMENT_PROVIDER=3dlook`: the consent copy gained "To measure you, it is also
+sent to 3DLOOK, Inc. (3dlook.ai)", `/privacy` switched its measurement card and kept the region unconfirmed
+per G12, and the local-only reassurance disappeared. No copy was hand-edited.
 
 ```ts
 // lib/measure/types.ts

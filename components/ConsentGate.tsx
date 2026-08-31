@@ -5,6 +5,8 @@ import { consentStatements, type ProcessingDisclosure } from "@/lib/compliance/d
 
 interface Props {
   disclosure: ProcessingDisclosure | null;
+  /** The measurement path, which may transmit or may stay on the device. */
+  measurementDisclosure: ProcessingDisclosure | null;
   granted: boolean;
   onGrant: () => void;
   onWithdraw: () => void;
@@ -29,11 +31,12 @@ interface Props {
  */
 export default function ConsentGate({
   disclosure,
+  measurementDisclosure,
   granted,
   onGrant,
   onWithdraw,
 }: Props) {
-  if (!disclosure) {
+  if (!disclosure || !measurementDisclosure) {
     return (
       <div className="border border-redline/50 bg-redline/5 p-3">
         <p className="text-sm text-graphite">
@@ -71,7 +74,7 @@ export default function ConsentGate({
       </p>
 
       <ul className="space-y-1.5">
-        {consentStatements(disclosure).map((statement) => (
+        {consentStatements(disclosure, measurementDisclosure).map((statement) => (
           <li key={statement} className="flex gap-2 text-sm leading-snug text-graphite">
             <span aria-hidden className="mt-[0.45rem] h-px w-2.5 shrink-0 bg-graphite/40" />
             <span>{statement}</span>

@@ -1,5 +1,10 @@
 import Studio from "@/components/Studio";
-import { getDisclosure, type ProcessingDisclosure } from "@/lib/compliance/disclosure";
+import {
+  getDisclosure,
+  getMeasurementDisclosure,
+  type ProcessingDisclosure,
+} from "@/lib/compliance/disclosure";
+import { measurementProviderName } from "@/lib/measure/config";
 import { getProvider } from "@/lib/tryon";
 
 /**
@@ -17,7 +22,27 @@ export const dynamic = "force-dynamic";
  * a panel whose whole job is to state what happens before anything happens.
  */
 export default function Home() {
-  return <Studio disclosure={resolveDisclosure()} />;
+  const measurementProvider = measurementProviderName();
+  return (
+    <Studio
+      disclosure={resolveDisclosure()}
+      measurementDisclosure={resolveMeasurementDisclosure(measurementProvider)}
+      measurementProvider={measurementProvider}
+    />
+  );
+}
+
+/** Same contract as `resolveDisclosure`: never throws, closes the path instead. */
+function resolveMeasurementDisclosure(provider: string): ProcessingDisclosure | null {
+  try {
+    return getMeasurementDisclosure(provider);
+  } catch (error) {
+    console.error(
+      "[compliance] no measurement disclosure available; photo path disabled:",
+      error instanceof Error ? error.message : error,
+    );
+    return null;
+  }
 }
 
 /**

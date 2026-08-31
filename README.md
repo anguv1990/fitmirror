@@ -61,7 +61,28 @@ Three things to know:
 - **The output is a coarse approximation, not a measurement.** Circumference is inferred from width using
   population averages. Responses carry a caveat naming the known bias toward under-reading width.
 
-A dev harness for this path lives at `/dev/pose`.
+A dev harness for this path lives at `/dev/pose`, and a calibration harness at `/dev/calibrate`.
+
+### The measurement seam
+
+`lib/measure/` is provider-agnostic, mirroring `lib/tryon/`. `MEASUREMENT_PROVIDER` picks the backend and
+defaults to `local`, so a fresh clone measures with no key, no account and no network.
+
+| Provider | Runs | Photo leaves device |
+| --- | --- | --- |
+| `local` (default) | Browser | **No** |
+| `3dlook` | Server | Yes |
+
+**"Runs in the browser" and "the photo stays on the device" are the same statement.** `lib/measure/client.ts`
+routes on exactly that, so the behaviour and the privacy claim cannot drift apart.
+
+`heightCm` is required by every provider, including paid ones — a photo has no absolute scale, and 3DLOOK
+asks for height too. `lib/measure/threedlook.ts` is a **worked example, not a working integration**: its
+request mapping is unverified and it throws by design. See `docs/07-body-measurement-buy-vs-build.md`.
+
+Measurements carry `measured | estimated | unreliable`. `toBodyMeasurements()` drops unreliable values so a
+number known to be wrong cannot move a size recommendation, while its explanation still reaches the shopper.
+Hip is currently `unreliable` — see gate G8.
 
 ## Consent and disclosure
 
@@ -121,6 +142,8 @@ Copy `.env.example` to `.env.local`. All values are optional while using the moc
 | `TRYON_PROVIDER` | `mock` (default) or `replicate` |
 | `REPLICATE_API_TOKEN` | Required when `TRYON_PROVIDER=replicate` |
 | `REPLICATE_TRYON_VERSION` | Optional model version pin |
+| `MEASUREMENT_PROVIDER` | `local` (default) or `3dlook`. Moving off `local` starts transmitting body photos |
+| `THREEDLOOK_API_KEY` | Required when `MEASUREMENT_PROVIDER=3dlook`, which is gated — see G11–G15 |
 
 ## Layout
 
@@ -131,6 +154,7 @@ app/
   layout.tsx
   globals.css           Tailwind v4 theme (@theme, no tailwind.config)
   api/tryon/route.ts    POST: validates, resolves garment, delegates to provider
+  api/measure/route.ts  POST: measurement, for providers that transmit
 components/
   Studio.tsx            flow state: photo -> garment -> result
   ConsentGate.tsx       unbundled consent, gating the photo panel only
@@ -141,6 +165,7 @@ lib/
   types.ts              Garment, TryOnRequest, TryOnResult
   garments.ts           the catalog (hardcoded; no DB yet)
   compliance/           per-provider processing facts; consent + label copy
+  measure/              measurement seam: local (browser), 3dlook (stub)
   tryon/                provider interface, mock, replicate, resolver
 ```
 

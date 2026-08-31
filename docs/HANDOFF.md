@@ -211,6 +211,33 @@ All five came from real data or real browsers, not unit tests:
 because the in-range branch was fixed and the out-of-range branch was missed. Real charts have gaps and
 open-ended bands that invented ones do not.
 
+## 5d. The measurement seam (2026-08-31)
+
+`lib/measure/` now mirrors `lib/tryon/`. `MEASUREMENT_PROVIDER` selects the provider; default `local`.
+
+- `local` — MediaPipe in the browser. Free, offline, **photo never leaves the device**.
+- `3dlook` — registered, disclosed, and **deliberately non-functional**. Its request mapping is unverified
+  because Mobile Tailor's API reference sits behind an Enterprise agreement (gate G11), and guessing field
+  names would mis-assign measurements silently. It throws rather than guessing.
+
+**Verified by running with `MEASUREMENT_PROVIDER=3dlook`:** the consent copy gained "To measure you, it is
+also sent to 3DLOOK, Inc. (3dlook.ai)", `/privacy` switched the measurement card to 3DLOOK and kept the
+region unconfirmed (G12), and the local-only reassurance disappeared. No copy was hand-edited.
+
+**The routing rule that matters:** `runsOn: "browser"` and "the photo stays on the device" are the same
+statement. `lib/measure/client.ts` routes on exactly that — `local` runs in the browser, anything else goes
+to `POST /api/measure`. Keeping one rule behind both the behaviour and the privacy claim is what stops them
+drifting.
+
+**Hip is now marked `unreliable`** and excluded from the size recommendation by `toBodyMeasurements()`,
+while its explanation still reaches the shopper. Verified in-browser: a real photo produced chest 100.3cm,
+an empty hip field, both caveats visible, and UK 16 at 64% confidence — lower than the 81% from typed
+measurements, because the fit engine correctly discounts partial data. **This was my call, not yours** — it
+is one line to reverse via `includeUnreliable`, and the alternative was feeding a number we have evidence
+is ~30cm wrong into a size recommendation.
+
+---
+
 ## 5c. Pose calibration, first real run (G8, 2026-08-30)
 
 Harness at **`/dev/calibrate`**; statistics in `lib/pose/calibration.ts`. Browser-only, photos never

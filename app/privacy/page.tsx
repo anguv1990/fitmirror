@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   getDisclosure,
-  MEASUREMENT_DISCLOSURE,
+  getMeasurementDisclosure,
   type ProcessingDisclosure,
 } from "@/lib/compliance/disclosure";
+import { measurementProviderName } from "@/lib/measure/config";
 import { getProvider } from "@/lib/tryon";
 
 export const metadata: Metadata = {
@@ -23,6 +24,9 @@ export const dynamic = "force-dynamic";
  */
 export default function PrivacyPage() {
   const render = safeDisclosure();
+  // Resolved, not assumed. Measuring runs in the browser today, but a vendor
+  // scanner behind the same seam would transmit — and this page has to say so.
+  const measurement = safeMeasurementDisclosure();
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-12 sm:px-8">
@@ -75,10 +79,7 @@ export default function PrivacyPage() {
           precise about which is which.
         </p>
 
-        <PathCard
-          heading="Measuring you from the photo"
-          disclosure={MEASUREMENT_DISCLOSURE}
-        />
+        <PathCard heading="Measuring you from the photo" disclosure={measurement} />
         <PathCard heading="Rendering the garment on you" disclosure={render} />
       </Section>
 
@@ -146,6 +147,14 @@ export default function PrivacyPage() {
 function safeDisclosure(): ProcessingDisclosure | null {
   try {
     return getDisclosure(getProvider().name);
+  } catch {
+    return null;
+  }
+}
+
+function safeMeasurementDisclosure(): ProcessingDisclosure | null {
+  try {
+    return getMeasurementDisclosure(measurementProviderName());
   } catch {
     return null;
   }

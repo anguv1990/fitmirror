@@ -54,10 +54,28 @@ label, and `/privacy` all render **from** those records.
 
 | | Photo leaves device |
 |---|---|
-| Pose measurement (`lib/pose/`, MediaPipe in-browser) | **No** |
+| Measurement, `local` provider (`lib/pose/`, MediaPipe in-browser) | **No** |
 | Try-on render (`POST /api/tryon`) | **Yes** |
 
 A blanket "your photo never leaves your device" claim is true of the first and false of the second.
+
+### The measurement seam
+
+`lib/measure/` mirrors `lib/tryon/` for the measurement half. `MEASUREMENT_PROVIDER` selects it, default
+`local`. Adding a provider = implement `MeasurementProvider`, register it, add a disclosure record.
+
+- **`runsOn: "browser"` and "the photo stays on the device" are the same statement.** `lib/measure/client.ts`
+  routes on exactly that: `local` runs in the browser, everything else goes to `POST /api/measure`, where
+  credentials live. Do not let the routing and the privacy claim drift apart.
+- `lib/measure/config.ts` holds *only* the provider name, with no provider imports — asking which provider
+  is configured must not pull MediaPipe into a server component's graph.
+- `heightCm` is mandatory for every provider including paid ones. A photo has no absolute scale; 3DLOOK asks
+  for height too. Never infer or default it.
+- `lib/measure/threedlook.ts` is a **worked example whose request mapping is unverified** and throws by
+  design. Their API reference is behind an Enterprise agreement (gate G11). Do not guess field names — a
+  wrong mapping mis-assigns measurements silently, and a confident wrong chest is worse than an error.
+- Values carry `confidence: measured | estimated | unreliable`. `toBodyMeasurements()` drops `unreliable`
+  ones so a number known to be wrong cannot move a size, while its note still reaches the UI.
 
 ### The fit engine
 
