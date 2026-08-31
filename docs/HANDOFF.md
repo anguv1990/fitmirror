@@ -251,12 +251,16 @@ uploaded, export is numbers-only so findings outlive the images.
 2. **The synthetic fixture was mirrored** — it placed the subject's left shoulder at the lower x, so every
    pose test had been running against a back-to-front body. That is why defect 1 survived.
 
-**Still open, and do not paper over it:** hip estimates came out at **72.1cm and 66.7cm** against chests
-near 100cm, which is not a plausible adult. The cause is structural rather than calibration —
-`HIP_WIDTH_TO_CIRCUMFERENCE = 3.1` is applied to MediaPipe's hip **joint centres** (~23cm apart), not the
-outer hip breadth (~35cm). Shoulder breadth resolves to ~40.9cm, so the scale itself is fine. Decide
-whether to use different landmarks or stop emitting `hipCm` from photos, as waist already does. **Do not
-just raise the constant to 4.3** — that fits the symptom.
+**Hip — now fixed by removal (2026-08-31).** Estimates came out at **72.1cm and 66.7cm** against chests
+near 100cm. The cause was structural: `HIP_WIDTH_TO_CIRCUMFERENCE` was applied to MediaPipe's hip **joint
+positions** (~23cm apart), not the outer hip (~35cm). Shoulder resolved to ~40.9cm and was correct, so the
+scale was never the problem — the landmark was.
+
+**Removed rather than retuned.** Scaling to ~4.3 makes the number look right while still measuring the
+wrong thing, and with no tape measurements it would be fitting the symptom to an assumption. This is the
+same rule that already covered waist — *no landmark supports it* — applied to the case that was missed.
+Shoppers can still type a hip. Recovering the estimate needs **image segmentation** for a body outline, not
+pose landmarks; `CALIBRATED_KEYS` keeps `hipCm` so the harness can validate that when it exists.
 
 **Not yet possible:** the actual error. That needs a confirmed height (175cm was assumed) and tape
 measurements. `MIN_SUBJECTS_FOR_MULTIPLIER_CHANGE = 8` deliberately blocks any multiplier change until

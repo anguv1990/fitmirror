@@ -97,16 +97,32 @@ Two defects surfaced immediately, from a path that had until then only ever seen
 - [x] **Fixed — the synthetic test fixture was mirrored.** It placed the subject's left shoulder at the
       lower x, i.e. it described someone facing away. Every pose test had been passing against a
       back-to-front body. This is why the defect above survived 13 tests.
-- [ ] **Open — hip estimates are far too small, and the cause is structural, not calibration.**
+- [x] **Fixed — hip estimation removed rather than retuned.**
+      Landmarks 23/24 are the hip **joint positions** (MediaPipe's world origin sits between them), not the
+      outer hip. Hip circumference is taken at the widest point over the buttocks — soft tissue no pose
+      landmark locates. This is the same reason waist was never estimated; the rule was right and hip was
+      the case that got missed.
+      Scaling the constant from 3.1 to ~4.3 would have made the output look correct while still measuring
+      the wrong thing, and with no tape measurements it would have been fitting the symptom to an
+      assumption. Recovering hip needs a body outline, i.e. **image segmentation, not pose landmarks** —
+      recorded below as the route back.
+      A shopper can still type a hip; only the photo estimate is gone. `CALIBRATED_KEYS` keeps `hipCm` so
+      the harness can validate a segmentation-based estimate when one exists.
+
+- [ ] **Superseded — original finding, kept for the reasoning.**
       Both accepted photos gave hips of **72.1cm and 66.7cm** against chests near 100cm. An adult hip
       circumference is normally at or above the chest.
       Working back: shoulder breadth resolves to ~40.9cm, which is right for an adult, so the *scale* is
       sound. The hip landmarks resolve to ~23.3cm apart — MediaPipe's landmarks 23/24 sit at the **hip
       joint centres**, not the outer hip breadth (~35cm). `HIP_WIDTH_TO_CIRCUMFERENCE = 3.1` is being
       applied to the wrong anatomical distance, and would need to be ≈4.3 to land near a real hip.
-      **Do not simply retune it** — decide first whether to derive hip width from a different landmark
-      pair, or stop emitting `hipCm` from photos the way waist already is.
-      Note `66.7` cleared the plausibility floor of 60cm, so that guard did not catch it either.
+      Note `66.7` cleared the plausibility floor of 60cm, so that guard did not catch it either — a
+      plausibility range catches broken poses, not a measurement of the wrong thing.
+
+- [ ] **Route back for hip:** MediaPipe Image Segmenter gives a body silhouette, from which width at hip
+      height is measurable. Combined with a side photo it would give depth too, and an ellipse
+      approximation rather than a population multiplier. That is a real piece of work, not a constant
+      change, and it would also improve chest.
 - [ ] Obtain tape measurements + confirmed height to quantify the chest error
 - [ ] Widen the sample: **8 distinct people minimum** before any multiplier changes
       (`MIN_SUBJECTS_FOR_MULTIPLIER_CHANGE`). Six photos of one person is one observation repeated.

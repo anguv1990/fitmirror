@@ -112,7 +112,11 @@ wide or open-ended band beat a much nearer narrow one. Keep the decay absolute.
   retailer's own "how to measure" wording.
 - **Real charts have gaps and open-ended bands.** Seasalt jumps 94→96cm at S/M. `outOfChartRange` tests the
   chart's overall span, not band membership.
-- **Waist is never estimated from a photo.** No landmark supports it.
+- **Waist and hip are never estimated from a photo.** No landmark supports either. Hip looks like it should
+  work — landmarks 23/24 are right there — but they are the hip *joint positions*, not the outer hip, and
+  circumference is taken at the widest point over the buttocks. Estimating it shipped once and read ~30cm
+  low; it was removed rather than retuned, because a bigger multiplier still measures the wrong thing.
+  Recovering it needs image segmentation, not pose landmarks.
 - **Verify UI changes in a real browser** (`claude-in-chrome`). Every real bug in this repo came from real
   data or a real browser; none came from unit tests.
 - **Never commit anything under `assets/`** — real photos of people, gitignored, calibration input only.
