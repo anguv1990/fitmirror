@@ -62,6 +62,8 @@ Three things to know:
   population averages. Responses carry a caveat naming the known bias toward under-reading width.
 
 A dev harness for this path lives at `/dev/pose`, and a calibration harness at `/dev/calibrate`.
+Both are **`npm run dev` only** — they are named `page.dev.tsx` and `next.config.ts` drops that
+extension from `pageExtensions` in a production build, so they are not compiled or served.
 
 ### The measurement seam
 
