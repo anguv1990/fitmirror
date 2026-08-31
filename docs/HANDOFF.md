@@ -148,15 +148,24 @@ console-only facts and stop searching for them.
 
 ### Buildable without a gate, in rough value order
 
-6. **G9 — pre-generate the demo renders** so the scripted path costs nothing and cannot fail on venue wifi.
-   With no real renderer yet this means the mock, which still proves the offline mechanism.
-7. **Hip, properly** — recovering it needs a body outline via MediaPipe Image Segmenter, not pose
+**All of this is now tracked as GitHub issues** (`anguv1990/fitmirror`), labelled `ready-for-agent` where
+it is fully specified and safe to hand to an AFK agent, and `ready-for-human` where it needs a tape
+measure, a physical device or people. See `docs/agents/issue-tracker.md` for the conventions.
+
+6. **G9 — demo resilience.** #12 — verify the fit path runs with wifi disabled and zero paid API calls.
+   Pre-generating *Vertex* renders stays blocked on G1–G3; with no real renderer yet, the offline
+   mechanism is provable against the mock.
+7. **Hip, properly** — #17. Recovering it needs a body outline via MediaPipe Image Segmenter, not pose
    landmarks. With a side photo it also gives depth, so circumference becomes an ellipse approximation
    rather than a population multiplier — which would improve chest too. Real work, not a constant change.
-8. **G8 tape measurements** — the calibration harness is built and waiting for ground truth. Needs a
-   confirmed height plus a tape chest, across 8 distinct people before any multiplier moves.
-9. Remove `/dev/pose` and `/dev/calibrate` from the production build, and delete `lib/tryon/replicate.ts`.
-10. Mobile layout is still inspection-only. Worth a real device check before the demo.
+8. **G8 ground truth** — #10 (tape measurements plus a confirmed height, to quantify the chest error) and
+   #11 (widen to 8 distinct people). The harness is built and waiting. **No multiplier moves until both
+   are done**: six photos of one person is one observation repeated, and the documented bias varies by sex.
+9. **Trim the production surface** — #14. Remove `/dev/pose` and `/dev/calibrate` from the production
+   build. `lib/tryon/replicate.ts` is deliberately *not* in that issue: it goes when a real provider lands,
+   which makes it downstream of G1–G3 rather than unblocked work.
+10. **Mobile layout** — #13. Still inspection-only; needs a real device before the demo.
+11. **Fit polish** — #15, garment-category awareness in size chart selection.
 
 **Do not start** the Vertex provider until G1–G3 are green. That is the whole point of the gate.
 
@@ -331,7 +340,8 @@ captured them.
 | `06-build-playbook.md` | **Start here if you have lost the thread.** Phases, goals, paste-ready prompts, which skills and agents to use, cost control, memory scopes |
 | `07-body-measurement-buy-vs-build.md` | 3DLOOK / Mobile Tailor evaluation, SMPL licensing trap, the `MeasurementProvider` seam, gates G11–G15 |
 | `08-vton-2026-and-next.md` | **Strategy update.** Google shipped free try-on into UK Search; fit-aware VTON is the 2026 frontier |
-| `../ONBOARDING.md` | Team onboarding guide (repo root). Untracked — see §8. |
+| `../ONBOARDING.md` | Team onboarding guide (repo root). |
+| `agents/*.md` | Agent-skill config: issue tracker, triage labels, domain-doc rules. |
 
 ---
 
@@ -349,11 +359,13 @@ no mobile app, no multi-brand catalogue, no production SLA. Footwear and tailori
   Re-run `/team-onboarding` when the project moves on.
 - **`lib/tryon/replicate.ts` is dead weight.** Non-functional by design; delete or replace when a real
   provider lands.
-- **`app/dev/pose` and `app/dev/calibrate` ship in the production build.** Both are clearly labelled
-  dev-only, but they are routes on the public surface, and the calibration harness accepts photo uploads.
-  Remove before anything real.
+- **`app/dev/pose` and `app/dev/calibrate` ship in the production build** — **#14**. Both are clearly
+  labelled dev-only, but they are routes on the public surface, and the calibration harness accepts photo
+  uploads. Remove before anything real; whatever mechanism is used must keep `/dev/calibrate` working in
+  `npm run dev`, because G8 is not finished with it.
 - **`assets/` holds real photos of people**, gitignored, calibration input for G8 only. Never commit them.
 - **Two `postcss` advisories** via Next 15, build-time CSS processing only. Fix requires Next 16, a major
-  upgrade. Deliberately left alone.
-- **Mobile layout is unverified.** The browser tooling could not emulate a viewport; responsive behaviour is
-  inspection-only. Worth a real device check before the demo.
+  upgrade. **Deliberately left alone — no issue filed**, so that the decision is not quietly reopened by
+  someone working the tracker.
+- **Mobile layout is unverified** — **#13**. The browser tooling could not emulate a viewport; responsive
+  behaviour is inspection-only. Worth a real device check before the demo.
