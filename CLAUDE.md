@@ -55,6 +55,18 @@ label, and `/privacy` all render **from** those records.
 - `app/page.tsx` and `app/privacy/page.tsx` are `force-dynamic`. Prerendering baked in the build machine's
   provider, so a deploy could show consent copy describing a provider that was not running.
 
+### Garment images vs garment art
+
+`Garment.art` is inline SVG for the picker thumbnail and the mock. **It is not a garment photograph**, and
+every hosted try-on model needs one (`Garment.image`, `lib/garmentImage.ts`, gate G16).
+
+`requireGarmentPhotograph` throws *before* a request is made, and `kind` is recorded rather than inferred
+from the file extension. The reason is specific: a hosted model handed vector artwork does not error — it
+returns a confident, useless render and bills for it. No garment in the catalogue has a photograph yet, and
+a test asserts that, so the render path fails loudly rather than expensively.
+
+Retailer product photography is copyrighted. Sourcing is a rights problem, not a code one.
+
 ### Two processing paths — do not conflate them
 
 | | Photo leaves device |

@@ -125,11 +125,22 @@ Everything above `lib/tryon/` is provider-agnostic. To add a backend:
 2. Register it in the `PROVIDERS` map in `lib/tryon/index.ts`.
 3. Set `TRYON_PROVIDER=<name>` in `.env.local`.
 
-`lib/tryon/replicate.ts` is a worked example against Replicate's IDM-VTON. It is **not** ready to use as-is;
-two things are stubbed and documented in the file:
+### Garment images
 
-- The catalog stores garments as inline SVG, but hosted try-on models expect photographs of real garments.
-  `Garment` needs an `imageUrl` field pointing at a publicly reachable product image.
+`Garment.art` is inline SVG for the picker and the mock. Hosted models need a **photograph of the garment
+laid flat**, held in `Garment.image` and resolved by `lib/garmentImage.ts`.
+
+`requireGarmentPhotograph()` throws before a request is made, and `kind` is recorded rather than guessed
+from the file extension, because a hosted model given vector artwork does not error — it returns a
+confident, useless render and charges for it. Failing first costs nothing.
+
+**No garment in the catalogue has a photograph yet** (gate G16), and a test asserts it. Sourcing is a rights
+problem rather than a code one: retailer product photography is copyrighted, so it needs own photography,
+licensed stock, or AI-generated garment images with usable terms. Each entry records its own `licence`.
+
+`lib/tryon/replicate.ts` is a worked example against Replicate's IDM-VTON. It is **not** ready to use as-is:
+
+- It throws on the first call because of G16 above. That is the seam working, not a bug.
 - It polls for the prediction inline. That is fine locally but should become a webhook plus a job record
   before it sees real traffic, since predictions can outlive a serverless request.
 

@@ -116,6 +116,28 @@ Two defects surfaced immediately, from a path that had until then only ever seen
 which is evidence of repeatability but says nothing about accuracy until there is a tape measurement to
 compare against. All figures scale linearly with declared height, which is currently a guess.
 
+### G16 · Garment photography — **blocks every hosted renderer**
+
+The seam is built (`Garment.image`, `lib/garmentImage.ts`); the images are not sourced.
+
+- [ ] Source a **photograph of each garment laid flat** — the format every hosted try-on model expects
+- [ ] Record a **licence per image** in `Garment.image.licence`. **Retailer product photography is
+      copyrighted; scraping it is not an option available here.** Own photography, licensed stock, or
+      AI-generated garment images with usable terms.
+- [ ] Set `PUBLIC_ORIGIN` if images are served from `public/` — a hosted model cannot fetch `localhost`
+
+**Why this is a gate and not a task.** `Garment.art` is vector artwork for the picker and the mock, and the
+mock hides the gap by compositing it directly. A hosted model handed that artwork **does not fail — it
+returns a confident, useless render and charges for it.** `requireGarmentPhotograph` therefore throws
+*before* the request rather than letting the problem surface in the output.
+
+This is a rights problem, not a code problem. Note it sits alongside G4, which covers *model* images; this
+covers *garment* images, and clearing one does not clear the other.
+
+**Try-off is the scalable answer later.** Reconstructing a canonical flat garment from a worn photo
+(`08-vton-2026-and-next.md` §2) is how a retailer turns existing catalogue imagery into try-on-ready assets
+without a reshoot.
+
 ### G9 · Demo resilience
 - [ ] Pre-generate every render on the scripted happy path (`02-architecture.md` §5, layer 2)
 - [ ] Confirm the demo runs with **wifi disabled**
@@ -152,6 +174,7 @@ no lawyer/DPO review. See `05-privacy-notice.md` §6.
 | G5 Size chart | P1 | ✅ Cleared |
 | G7 Vertex access | P1 | ⬜ Not started |
 | G8 Bias check | P2 | 🟡 In progress — 2 defects fixed, hip issue open |
+| G16 Garment photography | P1 | 🟡 Seam built, images not sourced |
 | G9 Demo resilience | P2 | ⬜ Not started |
 | G10 Compliance artefacts | P2 | ✅ Cleared |
 
