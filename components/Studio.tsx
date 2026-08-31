@@ -6,6 +6,7 @@ import ConsentGate from "@/components/ConsentGate";
 import GarmentPicker from "@/components/GarmentPicker";
 import MeasurementForm from "@/components/MeasurementForm";
 import PhotoSource, { type CapturedPhoto } from "@/components/PhotoSource";
+import SizeComparison from "@/components/SizeComparison";
 import SizeRecommendation from "@/components/SizeRecommendation";
 import TryOnResult from "@/components/TryOnResult";
 import type { ProcessingDisclosure } from "@/lib/compliance/disclosure";
@@ -270,6 +271,15 @@ export default function Studio({
               error={fitError}
               stale={fitStale}
             />
+            {fitStatus === "done" && (
+              <div className="mt-3">
+                <SizeComparison
+                  recommendation={fit}
+                  sizeChartId={sizeChartId}
+                  stale={fitStale}
+                />
+              </div>
+            )}
           </section>
 
           <Panel piece="E" title="The mirror" tone="mat">

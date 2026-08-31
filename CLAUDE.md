@@ -20,6 +20,11 @@ runs, so the breakage is easy to misdiagnose.
 
 After switching branches, a stale `.next/types` can fail `typecheck`. `rm -rf .next` clears it.
 
+**Do not run `npm run build` while `npm run dev` is running.** They share `.next`, and the build replaces
+chunks the dev server still expects. The symptom is misleading: pages render but never hydrate, API routes
+return HTML with `Cannot find module './NNN.js'`, and UI state silently resets — which looks like a React
+bug. Stop the dev server, `rm -rf .next`, restart.
+
 ## What this is
 
 An API-first virtual try-on and fit-recommendation service for UK apparel retail. A shopper supplies a photo
